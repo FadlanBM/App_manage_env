@@ -9,6 +9,7 @@ import {
   adminLoginRules,
   createAppRules,
   createSecretRules,
+  createBulkSecretsRules,
 } from '../validators/admin.validator.js';
 
 const router = Router();
@@ -98,7 +99,7 @@ router.post('/apps', adminAuth, validate(createAppRules), AppManagerController.c
  * @swagger
  * /api/admin/secrets:
  *   post:
- *     summary: Create a new secret for an app
+ *     summary: Create new secret(s) for an app (supports single and bulk)
  *     tags: [Admin Secrets]
  *     security:
  *       - bearerAuth: []
@@ -107,19 +108,67 @@ router.post('/apps', adminAuth, validate(createAppRules), AppManagerController.c
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [appId, keyName, value]
- *             properties:
- *               appId: { type: string, format: uuid, example: "123e4567-e89b-12d3-a456-426614174000" }
- *               keyName: { type: string, example: API_KEY }
- *               value: { type: string, example: sk-xxx-yyy-zzz }
+ *             oneOf:
+ *               - type: object
+ *                 title: Single secret
+ *                 required: [appId, keyName, value]
+ *                 properties:
+ *                   appId: { type: string, format: uuid, example: "123e4567-e89b-12d3-a456-426614174000" }
+ *                   keyName: { type: string, example: API_KEY }
+ *                   value: { type: string, example: sk-xxx-yyy-zzz }
+ *               - type: array
+ *                 title: Bulk secrets
+ *                 minItems: 1
+ *                 maxItems: 50
+ *                 items:
+ *                   type: object
+ *                   required: [appId, keyName, value]
+ *                   properties:
+ *                     appId: { type: string, format: uuid }
+ *                     keyName: { type: string }
+ *                     value: { type: string }
+ *             additionalProperties:
+ *               type: object
+ *               title: Bulk secrets in object
+ *               required: [secrets]
+ *               properties:
+ *                 secrets:
+ *                   type: array
+ *                   minItems: 1
+ *                   maxItems: 50
+ *                   items:
+ *                     type: object
+ *                     required: [appId, keyName, value]
+ *                     properties:
+ *                       appId: { type: string, format: uuid }
+ *                       keyName: { type: string }
+ *                       value: { type: string }
  *     responses:
- *       201: { description: Secret created }
+ *       201:
+ *         description: Secret(s) created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
  *       401: { description: Unauthorized }
  *       404: { description: App not found }
  *       422: { description: Validation error }
  */
-router.post('/secrets', adminAuth, validate(createSecretRules), SecretController.create);
+const transformBulkSecrets = (req, res, next) => {
+  if (Array.isArray(req.body)) {
+    req.body = { secrets: req.body };
+  }
+  next();
+};
+
+const bulkSecretsValidator = (req, res, next) => {
+  if (req.body && Array.isArray(req.body.secrets)) {
+    return validate(createBulkSecretsRules)(req, res, next);
+  }
+  return validate(createSecretRules)(req, res, next);
+};
+
+router.post('/secrets', adminAuth, transformBulkSecrets, bulkSecretsValidator, SecretController.create);
 
 /**
  * @swagger
