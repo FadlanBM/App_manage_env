@@ -11,6 +11,7 @@ export const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   ENCRYPTION_KEY: z.string().min(16, 'ENCRYPTION_KEY must be at least 16 characters').default('default-dev-encryption-key-change-me!'),
+  BASE_URL: z.string().url('BASE_URL must be a valid URL').default('http://localhost:3000'),
 });
 
 export function validateEnv() {

@@ -14,6 +14,7 @@ const config = {
   rateLimitWindowMs: env.RATE_LIMIT_WINDOW_MS,
   rateLimitMax: env.RATE_LIMIT_MAX,
   encryptionKey: env.ENCRYPTION_KEY,
+  baseUrl: env.BASE_URL,
 };
 
 export default config;

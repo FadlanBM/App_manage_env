@@ -14,8 +14,24 @@ import logger from './logger.js';
 const app = express();
 
 // Security & parsing
-app.use(helmet());
-app.use(cors());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "validator.swagger.io"],
+      },
+    },
+  })
+);
+app.use(
+  cors({
+    origin: config.baseUrl,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Rate limiting
