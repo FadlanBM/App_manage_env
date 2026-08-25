@@ -1,4 +1,5 @@
 import swaggerJsdoc from 'swagger-jsdoc';
+import config from './config/index.js';
 
 const options = {
   definition: {
@@ -9,7 +10,7 @@ const options = {
       description: 'Multi-app authentication REST API with dual-token JWT (access + refresh)',
     },
     servers: [
-      { url: 'http://localhost:3000', description: 'Development server' },
+      { url: `${config.baseUrl}/api`, description: 'API server' },
     ],
     components: {
       securitySchemes: {
