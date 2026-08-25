@@ -1,11 +1,11 @@
 import { verifyAccessToken } from '../utils/jwt.js';
 
-export function authMiddleware(req, res, next) {
+export function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({
       status: 'error',
-      message: 'Token required',
+      message: 'Access token required',
       data: null,
     });
   }
@@ -13,14 +13,14 @@ export function authMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
   try {
     const payload = verifyAccessToken(token);
-    if (payload.app_id !== req.appName) {
-      return res.status(401).json({
+    if (payload.role !== 'admin') {
+      return res.status(403).json({
         status: 'error',
-        message: 'Token app mismatch',
+        message: 'Admin access required',
         data: null,
       });
     }
-    req.user = payload;
+    req.admin = payload;
     next();
   } catch {
     return res.status(401).json({

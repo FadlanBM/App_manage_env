@@ -7,6 +7,10 @@ export const AppRepository = {
     return db.app.findUnique({ where: { appName } });
   },
 
+  findById(id) {
+    return db.app.findUnique({ where: { id } });
+  },
+
   /** Get all active (non-revoked) secrets for an app */
   findActiveSecrets(appId) {
     return db.appSecret.findMany({

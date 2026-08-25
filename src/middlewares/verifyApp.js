@@ -13,7 +13,7 @@ export async function verifyApp(req, res, next) {
     });
   }
 
-  const app = await AppRepository.findByAppName(appId);
+  const app = await AppRepository.findById(appId);
   if (!app || !app.isActive) {
     return res.status(401).json({
       status: 'error',

@@ -17,6 +17,13 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'Admin JWT token',
+        },
+        appCredentials: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-App-Id',
+          description: 'App UUID (id from POST /api/admin/apps) + X-App-Secret',
         },
       },
       schemas: {
@@ -28,8 +35,42 @@ const options = {
             data: { type: 'object', nullable: true, example: null },
           },
         },
+        Admin: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            username: { type: 'string' },
+            role: { type: 'string', enum: ['admin', 'user'] },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        App: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            appId: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        SecretItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            key: { type: 'string' },
+            value: { type: 'string' },
+            appId: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
       },
     },
+    tags: [
+      { name: 'Admin Auth', description: 'Admin authentication endpoints' },
+      { name: 'Admin Apps', description: 'Admin app management' },
+      { name: 'Admin Secrets', description: 'Admin secret management' },
+      { name: 'Client', description: 'Client app endpoints' },
+    ],
   },
   apis: ['./src/routes/*.js', './src/controllers/*.js'],
 };

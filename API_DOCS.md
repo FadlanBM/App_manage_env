@@ -412,21 +412,6 @@ curl -X POST http://localhost:3000/api/auth/logout-all \
   -H "X-App-Secret: fj_secret_xxx" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
-
----
-
-## Swagger UI
-
-Dokumentasi interaktif tersedia di:
-
-```
-http://localhost:3000/api-docs
-```
-
-JSON spec:
-
-```
-http://localhost:3000/api-docs.json
 ```
 
 ---

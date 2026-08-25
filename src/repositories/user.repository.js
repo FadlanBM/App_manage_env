@@ -18,6 +18,14 @@ export const UserRepository = {
     });
   },
 
+  updateRole(id, role) {
+    return db.user.update({
+      where: { id },
+      data: { role },
+      select: { id: true, name: true, email: true, role: true },
+    });
+  },
+
   async clear() {
     await db.user.deleteMany();
   },

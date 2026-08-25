@@ -13,6 +13,7 @@ const config = {
   logLevel: env.LOG_LEVEL,
   rateLimitWindowMs: env.RATE_LIMIT_WINDOW_MS,
   rateLimitMax: env.RATE_LIMIT_MAX,
+  encryptionKey: env.ENCRYPTION_KEY,
 };
 
 export default config;

@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import config from '../config/index.js';
 
-export function generateAccessToken(userId, appName, email) {
+export function generateAccessToken(userId, appName, email, role = 'user') {
   return jwt.sign(
-    { user_id: userId, app_id: appName, email },
+    { user_id: userId, app_id: appName, email, role },
     config.jwtSecret,
     { expiresIn: config.accessTokenTtl },
   );
