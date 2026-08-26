@@ -12,6 +12,8 @@ import config from './config/index.js';
 import logger from './logger.js';
 
 const app = express();
+app.set('trust proxy', 1); // Allow correct IP reading behind Cloudflare Tunnel
+
 
 // Security & parsing
 app.use(
