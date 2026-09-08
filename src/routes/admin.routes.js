@@ -10,6 +10,7 @@ import {
   createAppRules,
   createSecretRules,
   createBulkSecretsRules,
+  updateSecretRules,
 } from '../validators/admin.validator.js';
 
 const router = Router();
@@ -189,5 +190,37 @@ router.post('/secrets', adminAuth, transformBulkSecrets, bulkSecretsValidator, S
  *       401: { description: Unauthorized }
  */
 router.get('/secrets', adminAuth, SecretController.list);
+
+/**
+ * @swagger
+ * /api/admin/secrets/{id}:
+ *   put:
+ *     summary: Update an existing secret
+ *     tags: [Admin Secrets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: The secret ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               keyName: { type: string, example: NEW_API_KEY }
+ *               value: { type: string, example: new-sk-xxx-yyy-zzz }
+ *     responses:
+ *       200: { description: Secret updated successfully }
+ *       400: { description: Nothing to update }
+ *       401: { description: Unauthorized }
+ *       404: { description: Secret not found }
+ *       422: { description: Validation error }
+ */
+router.put('/secrets/:id', adminAuth, validate(updateSecretRules), SecretController.update);
 
 export default router;

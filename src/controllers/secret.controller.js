@@ -51,4 +51,43 @@ export const SecretController = {
       next(err);
     }
   },
+
+  async update(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { keyName, value } = req.body;
+
+      if (!keyName && !value) {
+        return res.status(400).json({ success: false, message: 'Nothing to update' });
+      }
+
+      const secretItem = await prisma.secretItem.findUnique({
+        where: { id },
+      });
+
+      if (!secretItem) {
+        return res.status(404).json({ success: false, message: 'Secret not found' });
+      }
+
+      const updateData = {};
+      if (keyName) {
+        updateData.keyName = keyName;
+      }
+      if (value) {
+        const { encryptedData, iv, authTag } = encryptSecret(value);
+        updateData.encryptedData = encryptedData;
+        updateData.iv = iv;
+        updateData.authTag = authTag;
+      }
+
+      const updatedSecret = await prisma.secretItem.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return sendSuccess(res, updatedSecret, 'Secret updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  },
 };

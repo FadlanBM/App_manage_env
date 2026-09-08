@@ -447,3 +447,67 @@ Response saat limit tercapai:
   "data": null
 }
 ```
+
+---
+
+## Admin API
+
+### 1. Update Data Env (Secret)
+
+Update nama key (keyName) atau nilainya (value) dari sebuah secret yang sudah ada.
+
+```
+PUT /api/admin/secrets/:id
+```
+
+**Headers:**
+
+| Header | Required | Deskripsi |
+|--------|----------|-----------|
+| `Authorization` | ✅ | `Bearer <admin_access_token>` |
+
+**Parameters:**
+
+- `id` (path): ID dari secret yang ingin diupdate (UUID).
+
+**Request Body (Opsional minimal satu):**
+
+```json
+{
+  "keyName": "NEW_API_KEY",
+  "value": "new-sk-xxx-yyy-zzz"
+}
+```
+
+| Field | Type | Validasi |
+|-------|------|----------|
+| `keyName` | string | Opsional, tidak boleh kosong jika dikirim |
+| `value` | string | Opsional, tidak boleh kosong jika dikirim |
+
+**Response Sukses (200):**
+
+```json
+{
+  "status": "success",
+  "message": "Secret updated successfully",
+  "data": {
+    "id": "abc-123",
+    "appId": "fitness_journal",
+    "keyName": "NEW_API_KEY",
+    "encryptedData": "...",
+    "iv": "...",
+    "authTag": "...",
+    "createdAt": "2023-01-01T00:00:00Z"
+  }
+}
+```
+
+**Response Error:**
+
+| Status | Message |
+|--------|---------|
+| 400 | Nothing to update |
+| 401 | Unauthorized (Admin token invalid/missing) |
+| 404 | Secret not found |
+| 422 | Validation error |
+

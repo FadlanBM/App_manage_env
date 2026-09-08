@@ -28,3 +28,8 @@ export const createBulkSecretsRules = [
   body('secrets.*.keyName').trim().notEmpty().withMessage('Each secret must have a keyName'),
   body('secrets.*.value').trim().notEmpty().withMessage('Each secret must have a value'),
 ];
+
+export const updateSecretRules = [
+  body('keyName').optional().trim().notEmpty().withMessage('keyName cannot be empty if provided'),
+  body('value').optional().trim().notEmpty().withMessage('value cannot be empty if provided'),
+];
