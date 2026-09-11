@@ -37,9 +37,9 @@ export const SecretController = {
 
   async list(req, res, next) {
     try {
-      const { app_id } = req.query;
+      const { appId } = req.query;
       const secrets = await prisma.secretItem.findMany({
-        where: { appId: app_id },
+        where: { appId },
         select: {
           id: true,
           keyName: true,
