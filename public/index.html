@@ -121,16 +121,6 @@
           <p class="text-sm text-slate-400 mt-1">Manage encrypted application environment variables</p>
         </div>
 
-        <!-- Auth Tabs -->
-        <div class="flex p-1 bg-slate-900/80 rounded-xl mb-6 border border-slate-800">
-          <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-600 text-white shadow transition">
-            Sign In
-          </button>
-          <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">
-            Create Admin
-          </button>
-        </div>
-
         <!-- Login Form -->
         <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
           <div>
@@ -150,35 +140,6 @@
           <button type="submit" id="btn-login-submit" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
             <span>Sign In to Dashboard</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </form>
-
-        <!-- Register Form -->
-        <form id="register-form" onsubmit="handleRegister(event)" class="hidden space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Full Name</label>
-            <div class="relative">
-              <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="text" id="reg-name" required placeholder="Admin Name" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
-            <div class="relative">
-              <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="email" id="reg-email" required placeholder="admin@example.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Password (min. 8 characters)</label>
-            <div class="relative">
-              <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="password" id="reg-password" minlength="8" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
-            </div>
-          </div>
-          <button type="submit" id="btn-register-submit" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-            <span>Register Admin Account</span>
-            <i data-lucide="user-plus" class="w-4 h-4"></i>
           </button>
         </form>
       </div>
@@ -690,28 +651,6 @@
     }
 
     // Authentication Handlers
-    function switchAuthTab(tab) {
-      const loginForm = document.getElementById('login-form');
-      const regForm = document.getElementById('register-form');
-      const tabLoginBtn = document.getElementById('tab-login-btn');
-      const tabRegBtn = document.getElementById('tab-register-btn');
-      const authTitle = document.getElementById('auth-title');
-
-      if (tab === 'login') {
-        loginForm.classList.remove('hidden');
-        regForm.classList.add('hidden');
-        tabLoginBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-600 text-white shadow transition';
-        tabRegBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
-        authTitle.innerText = 'Admin Sign In';
-      } else {
-        loginForm.classList.add('hidden');
-        regForm.classList.remove('hidden');
-        tabRegBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow transition';
-        tabLoginBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
-        authTitle.innerText = 'Create Admin Account';
-      }
-    }
-
     async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('login-email').value;
@@ -739,38 +678,6 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>Sign In to Dashboard</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
-        lucide.createIcons({ root: btn });
-      }
-    }
-
-    async function handleRegister(e) {
-      e.preventDefault();
-      const name = document.getElementById('reg-name').value;
-      const email = document.getElementById('reg-email').value;
-      const password = document.getElementById('reg-password').value;
-      const btn = document.getElementById('btn-register-submit');
-
-      try {
-        btn.disabled = true;
-        btn.innerHTML = `<span>Registering...</span>`;
-
-        const res = await apiRequest('/api/admin/register', {
-          method: 'POST',
-          body: JSON.stringify({ name, email, password })
-        });
-
-        state.token = res.data.access_token;
-        state.user = res.data.user;
-        localStorage.setItem('envvault_token', state.token);
-        localStorage.setItem('envvault_user', JSON.stringify(state.user));
-
-        showToast('Admin account created successfully', 'success');
-        initDashboard();
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<span>Register Admin Account</span><i data-lucide="user-plus" class="w-4 h-4"></i>`;
         lucide.createIcons({ root: btn });
       }
     }
