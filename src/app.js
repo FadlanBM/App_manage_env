@@ -30,8 +30,11 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
+        connectSrc: ["'self'", '*'],
+        upgradeInsecureRequests: null,
       },
     },
+    strictTransportSecurity: false,
   })
 );
 app.use(
