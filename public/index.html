@@ -3,28 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EnvVault | Centralized Environment & Secret Manager</title>
+  <title>EnvVault — Centralized Secrets &amp; Environment Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
           },
           colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
+            canvas: '#0d1117',
+            panel: '#161b22',
+            subpanel: '#21262d',
+            borderline: '#30363d',
+            accent: {
+              DEFAULT: '#2f81f7',
+              hover: '#388bfd',
+              subtle: '#1f3b64',
             }
           }
         }
@@ -32,74 +34,93 @@
     }
   </script>
   <style>
+    :root {
+      color-scheme: dark;
+    }
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #0b0f17;
-      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      background-color: #0d1117;
+      color: #c9d1d9;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
     }
     code, pre, .font-mono {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     }
-    .glass-card {
-      background: rgba(18, 24, 38, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .panel {
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      padding: 16px;
+    }
+    .panel-flush {
+      background-color: #161b22;
+      border: 1px solid #30363d;
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: #0f172a;
+      background: #0d1117;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 4px;
+      background: #30363d;
+      border-radius: 3px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #475569;
+      background: #484f58;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- Top Navbar -->
-  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
-          <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-extrabold text-lg tracking-tight text-white">EnvVault</span>
-            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">AES-256-GCM</span>
+  <header class="border-b border-borderline bg-panel sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded bg-accent/20 border border-accent/40 text-accent flex items-center justify-center">
+            <i data-lucide="shield" class="w-4 h-4"></i>
           </div>
-          <p class="text-xs text-slate-400">Centralized Environment & Secrets Manager</p>
+          <span class="font-semibold text-sm tracking-tight text-white">EnvVault</span>
+          <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-subpanel text-slate-300 border border-borderline">v1.0 • AES-256-GCM</span>
         </div>
       </div>
 
-      <!-- Right Nav / User Controls -->
+      <!-- Right Nav / Controls -->
       <div class="flex items-center gap-3">
-        <a href="/api-docs" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition">
-          <i data-lucide="book-open" class="w-4 h-4 text-slate-400"></i>
+        <a href="/api-docs" target="_blank" class="text-xs font-medium text-slate-400 hover:text-white px-2.5 py-1.5 rounded hover:bg-subpanel transition">
           Swagger Docs
         </a>
-        <a href="/health" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition border border-emerald-900/40">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          API Online
+        <a href="/health" target="_blank" class="text-xs font-medium text-emerald-400 px-2.5 py-1.5 rounded border border-emerald-900/60 bg-emerald-950/20 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          API Healthy
         </a>
 
         <!-- Auth info if logged in -->
-        <div id="nav-user-section" class="hidden flex items-center gap-3 pl-3 border-l border-slate-800">
-          <div class="text-right hidden md:block">
-            <div id="nav-user-name" class="text-xs font-semibold text-white">Admin</div>
-            <div id="nav-user-email" class="text-[11px] text-slate-400">admin@domain.com</div>
+        <div id="nav-user-section" class="hidden flex items-center gap-3 pl-3 border-l border-borderline">
+          <div class="text-right hidden sm:block">
+            <span id="nav-user-name" class="text-xs font-medium text-white block leading-tight">Admin</span>
+            <span id="nav-user-email" class="text-[11px] text-slate-400 font-mono block leading-tight">admin@domain.com</span>
           </div>
-          <button onclick="handleLogout()" title="Logout" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition border border-slate-800 hover:border-rose-900/40">
+          <button onclick="handleLogout()" title="Logout" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-subpanel rounded transition border border-transparent hover:border-borderline">
             <i data-lucide="log-out" class="w-4 h-4"></i>
           </button>
         </div>
@@ -108,183 +129,147 @@
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
     <!-- AUTH SCREEN (Shown if NOT logged in) -->
-    <div id="auth-screen" class="hidden max-w-md mx-auto my-12">
-      <div class="glass-card rounded-2xl p-8 shadow-2xl border border-slate-800">
-        <div class="text-center mb-6">
-          <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center mx-auto mb-3">
-            <i data-lucide="lock" class="w-6 h-6"></i>
-          </div>
-          <h2 id="auth-title" class="text-2xl font-bold text-white tracking-tight">Admin Sign In</h2>
-          <p class="text-sm text-slate-400 mt-1">Manage encrypted application environment variables</p>
+    <div id="auth-screen" class="hidden max-w-sm mx-auto my-16">
+      <div class="panel rounded-lg p-6 shadow-xl">
+        <div class="mb-5">
+          <h1 class="text-lg font-semibold text-white tracking-tight">Admin Sign In</h1>
+          <p class="text-xs text-slate-400 mt-1">Authenticate to access application secrets and environment variables.</p>
         </div>
 
         <!-- Login Form -->
         <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
           <!-- Inline Error Banner -->
-          <div id="login-error-alert" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2"></div>
+          <div id="login-error-alert" class="hidden p-3 rounded bg-rose-950/40 border border-rose-800 text-rose-200 text-xs flex items-center gap-2"></div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
-            <div class="relative">
-              <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="email" id="login-email" oninput="clearLoginError()" required placeholder="admin@example.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
-            </div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Email</label>
+            <input type="email" id="login-email" oninput="clearLoginError()" required placeholder="admin@example.com" class="w-full bg-subpanel border border-borderline rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition">
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
-            <div class="relative">
-              <i data-lucide="key" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="password" id="login-password" oninput="clearLoginError()" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
-            </div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+            <input type="password" id="login-password" oninput="clearLoginError()" required placeholder="••••••••" class="w-full bg-subpanel border border-borderline rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition">
           </div>
-          <button type="submit" id="btn-login-submit" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
-            <span>Sign In to Dashboard</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          <button type="submit" id="btn-login-submit" class="w-full py-2 px-4 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded shadow-sm transition flex items-center justify-center gap-2">
+            <span>Sign In</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
           </button>
         </form>
       </div>
     </div>
 
     <!-- MAIN DASHBOARD (Shown when logged in) -->
-    <div id="dashboard-screen" class="hidden space-y-8">
+    <div id="dashboard-screen" class="hidden space-y-5">
 
-      <!-- Metrics Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-            <i data-lucide="layers" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Registered Apps</div>
-            <div id="stat-total-apps" class="text-2xl font-bold text-white mt-0.5">0</div>
-          </div>
+      <!-- Context Bar (Title, Breadcrumbs, Quick Stats, Actions) -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-borderline">
+        <div>
+          <h1 class="text-xl font-semibold text-white tracking-tight">Secrets Vault</h1>
+          <p class="text-xs text-slate-400 mt-0.5">
+            <span id="stat-apps-count">0</span> applications registered • <span id="stat-secrets-count">0</span> total variables
+          </p>
         </div>
-
-        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <i data-lucide="key-round" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Secrets</div>
-            <div id="stat-total-secrets" class="text-2xl font-bold text-white mt-0.5">0</div>
-          </div>
-        </div>
-
-        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
-            <i data-lucide="binary" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Encryption</div>
-            <div class="text-lg font-bold text-cyan-300 mt-0.5">AES-256-GCM</div>
-          </div>
-        </div>
-
-        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-            <i data-lucide="shield-alert" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Client Auth</div>
-            <div class="text-lg font-bold text-amber-300 mt-0.5">Dual App Secret</div>
-          </div>
+        <div class="flex items-center gap-2">
+          <button onclick="refreshData()" class="px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-subpanel hover:bg-slate-700/50 border border-borderline rounded flex items-center gap-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            Refresh
+          </button>
+          <button onclick="openModal('create-app-modal')" class="px-3 py-1.5 text-xs font-semibold text-white bg-accent hover:bg-accent-hover rounded flex items-center gap-1.5 transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            New Application
+          </button>
         </div>
       </div>
 
       <!-- Main Navigation Tabs -->
-      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div class="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
-          <button id="nav-tab-apps" onclick="switchDashboardTab('apps')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow transition">
-            <i data-lucide="boxes" class="w-4 h-4"></i>
-            Applications
-          </button>
-          <button id="nav-tab-secrets" onclick="switchDashboardTab('secrets')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
-            <i data-lucide="key" class="w-4 h-4"></i>
-            Environment Variables (.env)
-          </button>
-          <button id="nav-tab-integration" onclick="switchDashboardTab('integration')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
-            <i data-lucide="terminal" class="w-4 h-4"></i>
-            Client Integration SDK
-          </button>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="refreshData()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-700/60 transition">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            Refresh
-          </button>
-        </div>
+      <div class="flex items-center gap-1 border-b border-borderline pb-px">
+        <button id="nav-tab-apps" onclick="switchDashboardTab('apps')" class="px-3 py-2 text-xs font-medium border-b-2 border-accent text-white transition flex items-center gap-2">
+          <i data-lucide="boxes" class="w-4 h-4"></i>
+          Applications
+        </button>
+        <button id="nav-tab-secrets" onclick="switchDashboardTab('secrets')" class="px-3 py-2 text-xs font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition flex items-center gap-2">
+          <i data-lucide="key" class="w-4 h-4"></i>
+          Environment Variables (.env)
+        </button>
+        <button id="nav-tab-integration" onclick="switchDashboardTab('integration')" class="px-3 py-2 text-xs font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition flex items-center gap-2">
+          <i data-lucide="terminal" class="w-4 h-4"></i>
+          Client Integration SDK
+        </button>
       </div>
 
       <!-- TAB 1: APPLICATIONS -->
-      <div id="tab-content-apps" class="space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 class="text-lg font-bold text-white tracking-tight">Registered Applications</h3>
-            <p class="text-xs text-slate-400">Each application has its own encrypted secrets vault and authentication tokens.</p>
+      <div id="tab-content-apps" class="space-y-4">
+        <!-- Apps Table -->
+        <div class="panel rounded-lg overflow-hidden">
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-borderline bg-subpanel text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                  <th class="py-2.5 px-4">Application Name</th>
+                  <th class="py-2.5 px-4">Application ID</th>
+                  <th class="py-2.5 px-4">Variables</th>
+                  <th class="py-2.5 px-4">Status</th>
+                  <th class="py-2.5 px-4">Created</th>
+                  <th class="py-2.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="apps-table-body" class="divide-y divide-borderline text-xs">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
           </div>
-          <button onclick="openModal('create-app-modal')" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-brand-600/20 transition">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            Register New App
-          </button>
-        </div>
 
-        <!-- Apps Table / Cards -->
-        <div id="apps-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- Dynamically populated -->
-        </div>
-
-        <!-- Empty State for Apps -->
-        <div id="apps-empty" class="hidden text-center py-16 glass-card rounded-2xl border border-slate-800">
-          <div class="w-16 h-16 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-4">
-            <i data-lucide="folder-plus" class="w-8 h-8"></i>
+          <!-- Empty State for Apps -->
+          <div id="apps-empty" class="hidden text-center py-12 px-4">
+            <div class="w-10 h-10 rounded bg-subpanel text-slate-400 flex items-center justify-center mx-auto mb-2 border border-borderline">
+              <i data-lucide="folder" class="w-5 h-5"></i>
+            </div>
+            <h2 class="text-sm font-semibold text-white">No Applications Found</h2>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Create your first application to store encrypted secrets.</p>
+            <button onclick="openModal('create-app-modal')" class="mt-3 px-3 py-1.5 bg-accent text-white text-xs font-semibold rounded hover:bg-accent-hover transition inline-flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              Create Application
+            </button>
           </div>
-          <h4 class="text-base font-semibold text-white">No Applications Found</h4>
-          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Create your first application to start storing encrypted environment variables.</p>
-          <button onclick="openModal('create-app-modal')" class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            Create Application
-          </button>
         </div>
       </div>
 
       <!-- TAB 2: SECRETS / ENVIRONMENT VARIABLES -->
-      <div id="tab-content-secrets" class="hidden space-y-6">
-        <!-- Top Toolbar: App Selector & Actions -->
-        <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-            <label class="text-xs font-semibold text-slate-300 whitespace-nowrap">Active App:</label>
-            <select id="secrets-app-select" onchange="handleAppSelectChange(this.value)" class="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-medium text-white focus:outline-none focus:border-brand-500 min-w-[240px]">
-              <!-- Options populated dynamically -->
+      <div id="tab-content-secrets" class="hidden space-y-4">
+        <!-- Secrets Toolbar: App Selector, Filter, Actions -->
+        <div class="panel rounded-lg p-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <label class="text-xs font-medium text-slate-300 whitespace-nowrap">Application:</label>
+            <select id="secrets-app-select" onchange="handleAppSelectChange(this.value)" class="bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-accent min-w-[200px]">
+              <!-- Dynamically populated -->
             </select>
-            <div id="selected-app-badge" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono flex items-center gap-2">
+            <div class="text-xs px-2 py-1 rounded bg-canvas text-slate-300 font-mono border border-borderline flex items-center gap-1.5">
               <span class="text-slate-500">ID:</span>
-              <span id="selected-app-id-text" class="truncate max-w-[120px] sm:max-w-[200px]">None</span>
+              <span id="selected-app-id-text" class="truncate max-w-[140px] sm:max-w-[220px]">None</span>
               <button onclick="copyCurrentAppId()" title="Copy App ID" class="text-slate-400 hover:text-white">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <i data-lucide="copy" class="w-3 h-3"></i>
               </button>
             </div>
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex flex-wrap items-center gap-2">
-            <button onclick="openModal('add-secret-modal')" class="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl transition shadow">
-              <i data-lucide="plus" class="w-4 h-4"></i>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="openModal('add-secret-modal')" class="px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded flex items-center gap-1 transition">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
               Add Variable
             </button>
-            <button onclick="openModal('bulk-secrets-modal')" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-indigo-500/30 transition">
-              <i data-lucide="file-code" class="w-4 h-4"></i>
-              Bulk Import (.env)
+            <button onclick="openModal('bulk-secrets-modal')" class="px-2.5 py-1.5 bg-subpanel hover:bg-slate-700/50 text-slate-200 text-xs font-medium rounded border border-borderline flex items-center gap-1 transition">
+              <i data-lucide="file-code" class="w-3.5 h-3.5"></i>
+              Import .env
             </button>
-            <button onclick="exportAsEnv()" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
-              <i data-lucide="clipboard-copy" class="w-4 h-4"></i>
-              Copy as .env
+            <button onclick="exportAsEnv()" class="px-2.5 py-1.5 bg-subpanel hover:bg-slate-700/50 text-slate-200 text-xs font-medium rounded border border-borderline flex items-center gap-1 transition">
+              <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+              Copy .env
             </button>
-            <button onclick="downloadEnvFile()" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
-              <i data-lucide="download" class="w-4 h-4"></i>
+            <button onclick="downloadEnvFile()" class="px-2.5 py-1.5 bg-subpanel hover:bg-slate-700/50 text-slate-200 text-xs font-medium rounded border border-borderline flex items-center gap-1 transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
               Download .env
             </button>
           </div>
@@ -292,46 +277,46 @@
 
         <!-- Filter Search Bar -->
         <div class="flex items-center justify-between gap-4">
-          <div class="relative flex-1 max-w-md">
-            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-            <input type="text" id="secrets-search-input" oninput="filterSecrets(this.value)" placeholder="Filter by variable key (e.g. DATABASE_URL, PORT)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
+          <div class="relative flex-1 max-w-sm">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5"></i>
+            <input type="text" id="secrets-search-input" oninput="filterSecrets(this.value)" placeholder="Filter variables..." class="w-full bg-subpanel border border-borderline rounded pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent transition">
           </div>
           <div class="text-xs text-slate-400">
-            Showing <span id="filtered-secrets-count" class="font-bold text-white">0</span> variables
+            <span id="filtered-secrets-count" class="font-semibold text-white">0</span> variables
           </div>
         </div>
 
         <!-- Secrets Table -->
-        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="panel rounded-lg overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar">
             <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b border-slate-800 bg-slate-950/40 text-[11px] uppercase tracking-wider font-semibold text-slate-400">
-                  <th class="py-3 px-5">Variable Key</th>
-                  <th class="py-3 px-5">Encrypted Value (AES-256-GCM)</th>
-                  <th class="py-3 px-5">Created At</th>
-                  <th class="py-3 px-5 text-right">Actions</th>
+                <tr class="border-b border-borderline bg-subpanel text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                  <th class="py-2.5 px-4">Key Name</th>
+                  <th class="py-2.5 px-4">Encrypted Value (AES-256-GCM)</th>
+                  <th class="py-2.5 px-4">Updated</th>
+                  <th class="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody id="secrets-table-body" class="divide-y divide-slate-800/60 text-xs">
+              <tbody id="secrets-table-body" class="divide-y divide-borderline text-xs">
                 <!-- Rows populated dynamically -->
               </tbody>
             </table>
           </div>
 
           <!-- Empty State for Secrets -->
-          <div id="secrets-empty" class="hidden text-center py-16">
-            <div class="w-14 h-14 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3">
-              <i data-lucide="key-round" class="w-6 h-6"></i>
+          <div id="secrets-empty" class="hidden text-center py-12 px-4">
+            <div class="w-10 h-10 rounded bg-subpanel text-slate-400 flex items-center justify-center mx-auto mb-2 border border-borderline">
+              <i data-lucide="key" class="w-5 h-5"></i>
             </div>
-            <h4 class="text-sm font-semibold text-white">No Environment Variables</h4>
-            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">This application doesn't have any encrypted variables yet.</p>
-            <div class="mt-4 flex items-center justify-center gap-3">
-              <button onclick="openModal('add-secret-modal')" class="px-3.5 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition">
-                Add Single Variable
+            <h2 class="text-sm font-semibold text-white">No Variables Configured</h2>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">This application does not have any encrypted environment variables.</p>
+            <div class="mt-3 flex items-center justify-center gap-2">
+              <button onclick="openModal('add-secret-modal')" class="px-3 py-1.5 bg-accent text-white text-xs font-semibold rounded hover:bg-accent-hover transition">
+                Add Variable
               </button>
-              <button onclick="openModal('bulk-secrets-modal')" class="px-3.5 py-1.5 bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl hover:bg-slate-700 transition">
-                Paste .env File
+              <button onclick="openModal('bulk-secrets-modal')" class="px-3 py-1.5 bg-subpanel text-slate-300 text-xs font-medium rounded hover:bg-slate-700/50 border border-borderline transition">
+                Import .env
               </button>
             </div>
           </div>
@@ -339,55 +324,44 @@
       </div>
 
       <!-- TAB 3: CLIENT INTEGRATION -->
-      <div id="tab-content-integration" class="hidden space-y-6">
-        <div>
-          <h3 class="text-lg font-bold text-white tracking-tight">Client Integration Guide</h3>
-          <p class="text-xs text-slate-400">How your client apps (Flutter, Node.js, Python, Golang) fetch and inject decrypted secrets dynamically at runtime.</p>
-        </div>
+      <div id="tab-content-integration" class="hidden space-y-4">
+        <!-- Architecture Explanation -->
+        <div class="panel rounded-lg">
+          <h2 class="text-base font-semibold text-white">Client Integration Workflow</h2>
+          <p class="text-xs text-slate-400 mt-1">Applications authenticate using dual-credential headers (<code class="text-slate-200">X-App-Id</code> and <code class="text-slate-200">X-App-Secret</code>). The vault verifies credentials against bcrypt hashes and decrypts the AES-256-GCM ciphertexts in memory before returning them over HTTPS/HTTP.</p>
 
-        <!-- Workflow Banner -->
-        <div class="glass-card p-6 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center justify-center font-bold text-sm shrink-0">1</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 pt-4 border-t border-borderline text-xs">
             <div>
-              <h5 class="text-xs font-bold text-white">Send Credentials</h5>
-              <p class="text-xs text-slate-400 mt-1">Client calls <code class="text-brand-300">GET /api/client/secrets</code> passing <code class="text-indigo-300">X-App-Id</code> and <code class="text-indigo-300">X-App-Secret</code> in headers.</p>
+              <h3 class="font-semibold text-white text-xs">Send Credentials</h3>
+              <p class="text-slate-400 text-[11px] mt-1">Client calls <code class="text-blue-300">GET /api/client/secrets</code> passing <code class="text-slate-300">X-App-Id</code> and <code class="text-slate-300">X-App-Secret</code>.</p>
             </div>
-          </div>
-
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold text-sm shrink-0">2</div>
             <div>
-              <h5 class="text-xs font-bold text-white">Server Verification & Decryption</h5>
-              <p class="text-xs text-slate-400 mt-1">Server verifies bcrypt hash of secret, fetches AES-256-GCM ciphertexts, and decrypts them in memory.</p>
+              <h3 class="font-semibold text-white text-xs">Server Decrypts</h3>
+              <p class="text-slate-400 text-[11px] mt-1">Server verifies app secret, retrieves ciphertext from database, and decrypts using AES-256-GCM.</p>
             </div>
-          </div>
-
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center font-bold text-sm shrink-0">3</div>
             <div>
-              <h5 class="text-xs font-bold text-white">Inject to Process Environment</h5>
-              <p class="text-xs text-slate-400 mt-1">Client receives key-value pairs and injects them directly into <code class="text-cyan-300">process.env</code> before booting application services.</p>
+              <h3 class="font-semibold text-white text-xs">Runtime Injection</h3>
+              <p class="text-slate-400 text-[11px] mt-1">Client maps key-value response directly to local environment variables at boot.</p>
             </div>
           </div>
         </div>
 
-        <!-- Code Snippet Tabs -->
-        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
-          <div class="flex items-center justify-between border-b border-slate-800 bg-slate-950/60 px-4 py-2.5">
-            <div class="flex items-center gap-2">
-              <button onclick="switchSnippetLang('curl')" id="tab-lang-curl" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition">cURL</button>
-              <button onclick="switchSnippetLang('node')" id="tab-lang-node" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Node.js</button>
-              <button onclick="switchSnippetLang('flutter')" id="tab-lang-flutter" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Flutter / Dart</button>
-              <button onclick="switchSnippetLang('python')" id="tab-lang-python" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Python</button>
+        <!-- Code Snippet Container -->
+        <div class="rounded-lg border border-borderline overflow-hidden bg-canvas">
+          <div class="flex items-center justify-between border-b border-borderline bg-panel px-3 py-2">
+            <div class="flex items-center gap-1">
+              <button onclick="switchSnippetLang('curl')" id="tab-lang-curl" class="px-2.5 py-1 text-xs font-semibold rounded bg-accent text-white transition">cURL</button>
+              <button onclick="switchSnippetLang('node')" id="tab-lang-node" class="px-2.5 py-1 text-xs font-medium rounded text-slate-400 hover:text-white transition">Node.js</button>
+              <button onclick="switchSnippetLang('flutter')" id="tab-lang-flutter" class="px-2.5 py-1 text-xs font-medium rounded text-slate-400 hover:text-white transition">Flutter</button>
+              <button onclick="switchSnippetLang('python')" id="tab-lang-python" class="px-2.5 py-1 text-xs font-medium rounded text-slate-400 hover:text-white transition">Python</button>
             </div>
-            <button onclick="copySnippetCode()" class="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-lg transition">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              Copy Code
+            <button onclick="copySnippetCode()" class="flex items-center gap-1 px-2 py-1 text-[11px] text-slate-300 hover:text-white bg-subpanel border border-borderline rounded transition">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              Copy
             </button>
           </div>
-          <div class="p-5 bg-slate-950/80">
-            <pre><code id="snippet-code-container" class="text-xs font-mono text-emerald-300 leading-relaxed overflow-x-auto custom-scrollbar block">Loading snippet...</code></pre>
+          <div class="p-4">
+            <pre><code id="snippet-code-container" class="text-xs font-mono text-slate-200 leading-relaxed overflow-x-auto custom-scrollbar block">Loading snippet...</code></pre>
           </div>
         </div>
       </div>
@@ -398,151 +372,137 @@
   <!-- ==================== MODALS ==================== -->
 
   <!-- Modal: Create Application -->
-  <div id="create-app-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-400"></i>
-          Register Application
-        </h3>
-        <button onclick="closeModal('create-app-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div id="create-app-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="panel max-w-sm w-full rounded-lg p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-borderline">
+        <h2 class="text-sm font-semibold text-white">Register Application</h2>
+        <button onclick="closeModal('create-app-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <form onsubmit="handleCreateApp(event)" class="space-y-4">
+      <form onsubmit="handleCreateApp(event)" class="space-y-3">
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">Application Name</label>
-          <input type="text" id="new-app-name" required placeholder="e.g. mobile-app-production" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
-          <p class="text-[11px] text-slate-500 mt-1">Unique slug or name to identify this client application.</p>
+          <input type="text" id="new-app-name" required placeholder="e.g. auth-service" class="w-full bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent">
+          <p class="text-[11px] text-slate-500 mt-1">Identifies this client app within the vault.</p>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onclick="closeModal('create-app-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
-          <button type="submit" id="btn-create-app" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition">Create App</button>
+          <button type="button" onclick="closeModal('create-app-modal')" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-subpanel rounded transition">Cancel</button>
+          <button type="submit" id="btn-create-app" class="px-3 py-1.5 text-xs font-semibold bg-accent hover:bg-accent-hover text-white rounded transition">Create Application</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: New App Secret Revealed (Shown ONLY ONCE upon app creation) -->
-  <div id="new-app-secret-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-card max-w-lg w-full rounded-2xl p-6 border border-amber-500/30 shadow-2xl">
-      <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-4">
-        <i data-lucide="key" class="w-6 h-6"></i>
+  <!-- Modal: App Credentials Generated (Shown ONCE) -->
+  <div id="new-app-secret-modal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="panel max-w-md w-full rounded-lg p-5 shadow-2xl border-amber-600/40">
+      <div class="flex items-center justify-between mb-2 pb-2 border-b border-borderline">
+        <h2 class="text-sm font-semibold text-white">Credentials Generated</h2>
+        <button onclick="closeModal('new-app-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <h3 class="text-lg font-bold text-white">App Credentials Created</h3>
-      <p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 p-3 rounded-xl mt-2 leading-relaxed">
-        <strong>⚠️ IMPORTANT:</strong> The App Secret below is hashed with bcrypt in the database. It is shown <strong>only once</strong> and cannot be retrieved again. Please store it securely in your client app's environment!
+      <p class="text-xs text-amber-400 mt-2 leading-relaxed">
+        <strong>Important:</strong> The App Secret is hashed with bcrypt on the server. It is displayed <strong>only once</strong> and cannot be recovered. Save it to your client application now.
       </p>
 
-      <div class="space-y-3 mt-4">
+      <div class="space-y-2.5 mt-3">
         <div>
           <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Application Name</label>
-          <input type="text" id="created-app-name-disp" readonly class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white select-all">
+          <input type="text" id="created-app-name-disp" readonly class="w-full bg-canvas border border-borderline rounded px-2.5 py-1.5 text-xs font-mono text-white select-all">
         </div>
         <div>
           <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Application ID (X-App-Id)</label>
-          <div class="flex gap-2">
-            <input type="text" id="created-app-id-disp" readonly class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-indigo-300 select-all">
-            <button onclick="copyElementText('created-app-id-disp')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl transition"><i data-lucide="copy" class="w-4 h-4"></i></button>
+          <div class="flex gap-1.5">
+            <input type="text" id="created-app-id-disp" readonly class="flex-1 bg-canvas border border-borderline rounded px-2.5 py-1.5 text-xs font-mono text-blue-300 select-all">
+            <button onclick="copyElementText('created-app-id-disp')" class="px-2.5 py-1.5 bg-subpanel hover:bg-slate-700 text-slate-200 text-xs rounded border border-borderline"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
         <div>
           <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Application Secret (X-App-Secret)</label>
-          <div class="flex gap-2">
-            <input type="text" id="created-app-secret-disp" readonly class="flex-1 bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 select-all font-bold">
-            <button onclick="copyElementText('created-app-secret-disp')" class="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded-xl transition"><i data-lucide="copy" class="w-4 h-4"></i></button>
+          <div class="flex gap-1.5">
+            <input type="text" id="created-app-secret-disp" readonly class="flex-1 bg-canvas border border-amber-500/40 rounded px-2.5 py-1.5 text-xs font-mono text-amber-300 select-all font-semibold">
+            <button onclick="copyElementText('created-app-secret-disp')" class="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
       </div>
 
-      <div class="mt-6 flex justify-end">
-        <button onclick="closeModal('new-app-secret-modal'); switchDashboardTab('secrets')" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow transition">
-          I Have Saved The Secret & Continue
+      <div class="mt-4 flex justify-end">
+        <button onclick="closeModal('new-app-secret-modal'); switchDashboardTab('secrets')" class="px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded transition">
+          Done &amp; Continue
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Add Single Secret -->
-  <div id="add-secret-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-400"></i>
-          Add Environment Variable
-        </h3>
-        <button onclick="closeModal('add-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <!-- Modal: Add Variable -->
+  <div id="add-secret-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="panel max-w-sm w-full rounded-lg p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-borderline">
+        <h2 class="text-sm font-semibold text-white">Add Variable</h2>
+        <button onclick="closeModal('add-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <form onsubmit="handleAddSingleSecret(event)" class="space-y-4">
+      <form onsubmit="handleAddSingleSecret(event)" class="space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Variable Key Name</label>
-          <input type="text" id="new-secret-key" required placeholder="e.g. DATABASE_URL or API_KEY" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-slate-500 uppercase focus:outline-none focus:border-brand-500">
-          <p class="text-[11px] text-slate-500 mt-1">Standard practice uses UPPERCASE_WITH_UNDERSCORES.</p>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Key Name</label>
+          <input type="text" id="new-secret-key" required placeholder="DATABASE_URL" class="w-full bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs font-mono text-white placeholder-slate-500 uppercase focus:outline-none focus:border-accent">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Secret Value</label>
-          <textarea id="new-secret-val" required rows="3" placeholder="Paste value here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"></textarea>
-          <p class="text-[11px] text-slate-500 mt-1">Will be encrypted using AES-256-GCM before saving.</p>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Value</label>
+          <textarea id="new-secret-val" required rows="3" placeholder="Secret value..." class="w-full bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-accent"></textarea>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onclick="closeModal('add-secret-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
-          <button type="submit" id="btn-save-secret" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition">Save Encrypted</button>
+          <button type="button" onclick="closeModal('add-secret-modal')" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-subpanel rounded transition">Cancel</button>
+          <button type="submit" id="btn-save-secret" class="px-3 py-1.5 text-xs font-semibold bg-accent hover:bg-accent-hover text-white rounded transition">Save Encrypted</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Bulk Paste .env File -->
-  <div id="bulk-secrets-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="file-code" class="w-5 h-5 text-indigo-400"></i>
-          Bulk Import from .env File
-        </h3>
-        <button onclick="closeModal('bulk-secrets-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div id="bulk-secrets-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="panel max-w-lg w-full rounded-lg p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-2 pb-2 border-b border-borderline">
+        <h2 class="text-sm font-semibold text-white">Import from .env File</h2>
+        <button onclick="closeModal('bulk-secrets-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <p class="text-xs text-slate-400 mb-3">
-        Paste the contents of your <code class="text-indigo-300">.env</code> file. Comments (<code class="text-slate-500">#</code>) and empty lines will be ignored automatically.
+      <p class="text-xs text-slate-400 mb-2">
+        Paste .env contents below. Comment lines starting with # and blank lines are ignored.
       </p>
 
-      <form onsubmit="handleBulkImport(event)" class="space-y-4">
+      <form onsubmit="handleBulkImport(event)" class="space-y-3">
         <div>
-          <textarea id="bulk-env-textarea" oninput="parseBulkPreview()" required rows="8" placeholder="PORT=3000&#10;DATABASE_URL=postgresql://user:pass@localhost:5432/db&#10;JWT_SECRET=super-secret-key-at-least-32-chars&#10;API_TOKEN=sk-live-12345678" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-brand-500 custom-scrollbar"></textarea>
+          <textarea id="bulk-env-textarea" oninput="parseBulkPreview()" required rows="7" placeholder="PORT=3000&#10;DATABASE_URL=postgresql://user:***@localhost:5432/db&#10;JWT_SECRET=super-secret-key" class="w-full bg-canvas border border-borderline rounded p-2.5 text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-accent custom-scrollbar"></textarea>
         </div>
         <div class="flex items-center justify-between text-xs text-slate-400">
           <span id="bulk-parser-count">Detected: <strong class="text-white">0</strong> variables</span>
-          <span class="text-[11px] text-slate-500">Max 50 items per batch</span>
+          <span class="text-[11px] text-slate-500">Max 50 items</span>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onclick="closeModal('bulk-secrets-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
-          <button type="submit" id="btn-bulk-import" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow transition">Import All</button>
+          <button type="button" onclick="closeModal('bulk-secrets-modal')" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-subpanel rounded transition">Cancel</button>
+          <button type="submit" id="btn-bulk-import" class="px-3 py-1.5 text-xs font-semibold bg-accent hover:bg-accent-hover text-white rounded transition">Import Variables</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Edit Secret -->
-  <div id="edit-secret-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="edit-3" class="w-5 h-5 text-brand-400"></i>
-          Edit Variable
-        </h3>
-        <button onclick="closeModal('edit-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div id="edit-secret-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="panel max-w-sm w-full rounded-lg p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-borderline">
+        <h2 class="text-sm font-semibold text-white">Edit Variable</h2>
+        <button onclick="closeModal('edit-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <form onsubmit="handleEditSecretSubmit(event)" class="space-y-4">
+      <form onsubmit="handleEditSecretSubmit(event)" class="space-y-3">
         <input type="hidden" id="edit-secret-id">
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Variable Key Name</label>
-          <input type="text" id="edit-secret-key" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white uppercase focus:outline-none focus:border-brand-500">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Key Name</label>
+          <input type="text" id="edit-secret-key" required class="w-full bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs font-mono text-white uppercase focus:outline-none focus:border-accent">
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">New Value (leave blank to keep current)</label>
-          <textarea id="edit-secret-val" rows="3" placeholder="Enter new value..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-brand-500"></textarea>
+          <textarea id="edit-secret-val" rows="3" placeholder="Enter new value..." class="w-full bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-accent"></textarea>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onclick="closeModal('edit-secret-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
-          <button type="submit" id="btn-edit-secret" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition">Update Variable</button>
+          <button type="button" onclick="closeModal('edit-secret-modal')" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-subpanel rounded transition">Cancel</button>
+          <button type="submit" id="btn-edit-secret" class="px-3 py-1.5 text-xs font-semibold bg-accent hover:bg-accent-hover text-white rounded transition">Update Variable</button>
         </div>
       </form>
     </div>
@@ -578,21 +538,20 @@
       const container = document.getElementById('toast-container');
       if (!container) return;
       const toast = document.createElement('div');
-      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl transition duration-300 border ${
-        type === 'success' ? 'bg-slate-900 text-emerald-300 border-emerald-500/50' :
-        type === 'error' ? 'bg-slate-900 text-rose-300 border-rose-500/50' :
-        'bg-slate-900 text-slate-200 border-slate-700'
+      toast.className = `pointer-events-auto flex items-center gap-2 px-3 py-2 rounded text-xs font-medium shadow-lg transition duration-200 border ${
+        type === 'success' ? 'bg-panel text-emerald-300 border-emerald-800' :
+        type === 'error' ? 'bg-panel text-rose-300 border-rose-800' :
+        'bg-panel text-slate-200 border-borderline'
       }`;
-      const icon = type === 'success' ? 'check-circle-2' : type === 'error' ? 'alert-triangle' : 'info';
-      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+      const icon = type === 'success' ? 'check' : type === 'error' ? 'alert-circle' : 'info';
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-3.5 h-3.5 shrink-0"></i><span>${message}</span>`;
       container.appendChild(toast);
       safeCreateIcons();
 
       setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
+        setTimeout(() => toast.remove(), 250);
+      }, 3200);
     }
 
     // Modal Helpers
@@ -694,14 +653,14 @@
       } catch (err) {
         const msg = err.message || 'Login failed';
         if (errorAlert) {
-          errorAlert.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i><span>${escapeHtml(msg)}</span>`;
+          errorAlert.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i><span>${escapeHtml(msg)}</span>`;
           errorAlert.classList.remove('hidden');
           safeCreateIcons();
         }
         showToast(msg, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>Sign In to Dashboard</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+        btn.innerHTML = `<span>Sign In</span><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>`;
         safeCreateIcons();
       }
     }
@@ -725,10 +684,10 @@
         const btn = document.getElementById(`nav-tab-${t}`);
         const content = document.getElementById(`tab-content-${t}`);
         if (t === tab) {
-          btn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow transition';
+          btn.className = 'px-3 py-2 text-xs font-medium border-b-2 border-accent text-white transition flex items-center gap-2';
           content.classList.remove('hidden');
         } else {
-          btn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+          btn.className = 'px-3 py-2 text-xs font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition flex items-center gap-2';
           content.classList.add('hidden');
         }
       });
@@ -777,76 +736,67 @@
     }
 
     function updateMetrics() {
-      document.getElementById('stat-total-apps').innerText = state.apps.length;
+      document.getElementById('stat-apps-count').innerText = state.apps.length;
       let totalSecrets = 0;
       state.apps.forEach(a => {
         totalSecrets += a._count?.secretItems || 0;
       });
-      document.getElementById('stat-total-secrets').innerText = totalSecrets;
+      document.getElementById('stat-secrets-count').innerText = totalSecrets;
     }
 
-    // Render Apps View
+    // Render Apps View (Dense, clean table instead of repetitive cards)
     function renderApps() {
-      const container = document.getElementById('apps-container');
+      const tbody = document.getElementById('apps-table-body');
       const emptyState = document.getElementById('apps-empty');
 
       if (!state.apps || state.apps.length === 0) {
-        container.innerHTML = '';
+        tbody.innerHTML = '';
         emptyState.classList.remove('hidden');
         return;
       }
 
       emptyState.classList.add('hidden');
-      container.innerHTML = state.apps.map(app => {
+      tbody.innerHTML = state.apps.map(app => {
         const secretCount = app._count?.secretItems || 0;
         const formattedDate = new Date(app.createdAt).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
 
         return `
-          <div class="glass-card rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition duration-200 flex flex-col justify-between">
-            <div>
-              <div class="flex items-start justify-between gap-2 mb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                    <i data-lucide="box" class="w-4 h-4"></i>
-                  </div>
-                  <div>
-                    <h4 class="text-sm font-bold text-white tracking-tight">${escapeHtml(app.appName)}</h4>
-                    <span class="text-[10px] text-slate-400">Created ${formattedDate}</span>
-                  </div>
-                </div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${app.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400'}">
-                  ${app.isActive ? 'ACTIVE' : 'INACTIVE'}
-                </span>
-              </div>
-
-              <!-- App ID Bar -->
-              <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between gap-2">
-                <div class="truncate text-[11px] font-mono text-slate-400">
-                  <span class="text-slate-600">ID:</span> ${app.id}
-                </div>
-                <button onclick="copyToClipboard('${app.id}', 'App ID copied!')" title="Copy App ID" class="text-slate-400 hover:text-white shrink-0 p-1">
-                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <tr class="hover:bg-subpanel/50 transition">
+            <td class="py-2.5 px-4 font-medium text-white">
+              ${escapeHtml(app.appName)}
+            </td>
+            <td class="py-2.5 px-4 font-mono text-slate-400 text-xs">
+              <div class="flex items-center gap-1.5">
+                <span class="truncate max-w-[180px] sm:max-w-[280px]">${app.id}</span>
+                <button onclick="copyToClipboard('${app.id}', 'App ID copied!')" title="Copy App ID" class="text-slate-500 hover:text-white p-0.5">
+                  <i data-lucide="copy" class="w-3 h-3"></i>
                 </button>
               </div>
-
-              <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
-                <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i>
-                <span><strong class="text-white">${secretCount}</strong> encrypted variables</span>
+            </td>
+            <td class="py-2.5 px-4 text-slate-300">
+              <span class="font-mono text-white">${secretCount}</span>
+            </td>
+            <td class="py-2.5 px-4">
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${app.isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/60' : 'bg-slate-800 text-slate-400'}">
+                ${app.isActive ? 'ACTIVE' : 'INACTIVE'}
+              </span>
+            </td>
+            <td class="py-2.5 px-4 text-slate-400 text-[11px] whitespace-nowrap">
+              ${formattedDate}
+            </td>
+            <td class="py-2.5 px-4 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-1">
+                <button onclick="openSecretsForApp('${app.id}')" class="px-2.5 py-1 text-xs font-medium rounded bg-subpanel hover:bg-slate-700 text-slate-200 border border-borderline transition">
+                  Manage Secrets
+                </button>
+                <button onclick="handleDeleteApp('${app.id}', '${escapeHtml(app.appName)}')" title="Delete App" class="p-1 text-slate-400 hover:text-rose-400 hover:bg-subpanel rounded transition">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
               </div>
-            </div>
-
-            <div class="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between gap-2">
-              <button onclick="openSecretsForApp('${app.id}')" class="flex-1 py-2 px-3 text-xs font-semibold rounded-xl bg-brand-600/20 text-brand-300 hover:bg-brand-600 hover:text-white border border-brand-500/30 transition flex items-center justify-center gap-1.5">
-                <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
-                Manage Secrets
-              </button>
-              <button onclick="handleDeleteApp('${app.id}', '${escapeHtml(app.appName)}')" title="Delete App" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl border border-slate-800 hover:border-rose-900/40 transition">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </div>
+            </td>
+          </tr>
         `;
       }).join('');
 
@@ -884,18 +834,18 @@
         showToast(err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerText = 'Create App';
+        btn.innerText = 'Create Application';
       }
     }
 
     async function handleDeleteApp(id, name) {
-      if (!confirm(`Are you sure you want to delete application "${name}"?\n\nThis will permanently delete all its encrypted variables and authentication secrets.`)) {
+      if (!confirm(`Are you sure you want to delete application "${name}"?\n\nThis will permanently remove all associated encrypted secrets.`)) {
         return;
       }
 
       try {
         await apiRequest(`/api/admin/apps/${id}`, { method: 'DELETE' });
-        showToast(`Application "${name}" deleted successfully`, 'success');
+        showToast(`Application "${name}" deleted`, 'success');
         if (state.selectedAppId === id) {
           state.selectedAppId = null;
         }
@@ -970,18 +920,18 @@
       tbody.innerHTML = list.map(item => {
         const isRevealed = state.revealedSecrets.has(item.id);
         const displayVal = isRevealed ? escapeHtml(item.value) : '••••••••••••••••••••';
-        const formattedDate = new Date(item.createdAt).toLocaleDateString('en-US', {
+        const formattedDate = new Date(item.updatedAt || item.createdAt).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
 
         return `
-          <tr class="hover:bg-slate-900/50 transition">
-            <td class="py-3 px-5 font-mono font-bold text-white tracking-wide">
-              <span class="text-indigo-400">$</span> ${escapeHtml(item.keyName)}
+          <tr class="hover:bg-subpanel/50 transition">
+            <td class="py-2.5 px-4 font-mono font-medium text-white tracking-tight">
+              ${escapeHtml(item.keyName)}
             </td>
-            <td class="py-3 px-5 font-mono text-slate-300">
+            <td class="py-2.5 px-4 font-mono text-slate-300">
               <div class="flex items-center gap-2">
-                <span id="secret-val-text-${item.id}" class="max-w-[200px] sm:max-w-[320px] truncate ${isRevealed ? 'text-emerald-400 font-semibold select-all' : 'text-slate-500'}">
+                <span id="secret-val-text-${item.id}" class="max-w-[200px] sm:max-w-[340px] truncate ${isRevealed ? 'text-emerald-400 select-all' : 'text-slate-500'}">
                   ${displayVal}
                 </span>
                 <button onclick="toggleSecretReveal('${item.id}')" title="${isRevealed ? 'Hide' : 'Reveal'}" class="p-1 text-slate-400 hover:text-white rounded transition">
@@ -992,16 +942,16 @@
                 </button>
               </div>
             </td>
-            <td class="py-3 px-5 text-slate-400 text-[11px] whitespace-nowrap">
+            <td class="py-2.5 px-4 text-slate-400 text-[11px] whitespace-nowrap">
               ${formattedDate}
             </td>
-            <td class="py-3 px-5 text-right whitespace-nowrap">
+            <td class="py-2.5 px-4 text-right whitespace-nowrap">
               <div class="flex items-center justify-end gap-1">
-                <button onclick="openEditSecretModal('${item.id}', '${escapeJs(item.keyName)}')" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition" title="Edit">
-                  <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <button onclick="openEditSecretModal('${item.id}', '${escapeJs(item.keyName)}')" class="p-1.5 text-slate-400 hover:text-white hover:bg-subpanel rounded transition" title="Edit">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="handleDeleteSecret('${item.id}', '${escapeJs(item.keyName)}')" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition" title="Delete">
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <button onclick="handleDeleteSecret('${item.id}', '${escapeJs(item.keyName)}')" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-subpanel rounded transition" title="Delete">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
             </td>
@@ -1048,7 +998,7 @@
 
       try {
         btn.disabled = true;
-        btn.innerText = 'Encrypting & Saving...';
+        btn.innerText = 'Saving...';
 
         await apiRequest('/api/admin/secrets', {
           method: 'POST',
@@ -1059,13 +1009,13 @@
           })
         });
 
-        showToast(`Variable ${keyName} saved securely!`, 'success');
+        showToast(`Variable ${keyName} saved`, 'success');
         closeModal('add-secret-modal');
         keyInput.value = '';
         valInput.value = '';
 
         await loadSecretsForApp(state.selectedAppId);
-        await loadApps(); // update counts
+        await loadApps();
       } catch (err) {
         showToast(err.message, 'error');
       } finally {
@@ -1087,7 +1037,7 @@
 
       for (let line of lines) {
         line = line.trim();
-        if (!line || line.startsWith('#')) continue; // Skip comments and blank lines
+        if (!line || line.startsWith('#')) continue;
 
         const eqIdx = line.indexOf('=');
         if (eqIdx === -1) continue;
@@ -1095,7 +1045,6 @@
         let key = line.slice(0, eqIdx).trim();
         let val = line.slice(eqIdx + 1).trim();
 
-        // Strip enclosing quotes if present
         if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
           val = val.slice(1, -1);
         }
@@ -1118,7 +1067,7 @@
       const parsed = parseEnvText(text);
 
       if (parsed.length === 0) {
-        showToast('No valid KEY=VALUE pairs found in text', 'error');
+        showToast('No valid KEY=VALUE pairs found', 'error');
         return;
       }
 
@@ -1136,14 +1085,14 @@
       const btn = document.getElementById('btn-bulk-import');
       try {
         btn.disabled = true;
-        btn.innerText = 'Encrypting & Importing...';
+        btn.innerText = 'Importing...';
 
         await apiRequest('/api/admin/secrets', {
           method: 'POST',
           body: JSON.stringify(payload)
         });
 
-        showToast(`Successfully imported ${parsed.length} variables!`, 'success');
+        showToast(`Imported ${parsed.length} variables`, 'success');
         closeModal('bulk-secrets-modal');
         document.getElementById('bulk-env-textarea').value = '';
 
@@ -1153,7 +1102,7 @@
         showToast(err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerText = 'Import All';
+        btn.innerText = 'Import Variables';
       }
     }
 
@@ -1186,7 +1135,7 @@
           body: JSON.stringify(body)
         });
 
-        showToast('Variable updated successfully', 'success');
+        showToast('Variable updated', 'success');
         closeModal('edit-secret-modal');
         await loadSecretsForApp(state.selectedAppId);
       } catch (err) {
@@ -1199,7 +1148,7 @@
 
     // Delete Secret
     async function handleDeleteSecret(id, keyName) {
-      if (!confirm(`Are you sure you want to delete variable "${keyName}"?`)) return;
+      if (!confirm(`Delete variable "${keyName}"?`)) return;
 
       try {
         await apiRequest(`/api/admin/secrets/${id}`, { method: 'DELETE' });
@@ -1223,8 +1172,8 @@
         return `${s.keyName}=${val}`;
       });
 
-      const envText = `# Generated by EnvVault for App ID: ${state.selectedAppId}\n# Exported on ${new Date().toISOString()}\n\n` + lines.join('\n') + '\n';
-      copyToClipboard(envText, 'All variables copied in .env format!');
+      const envText = `# Generated by EnvVault for App: ${state.selectedAppId}\n# Exported: ${new Date().toISOString()}\n\n` + lines.join('\n') + '\n';
+      copyToClipboard(envText, 'Copied .env format');
     }
 
     function downloadEnvFile() {
@@ -1261,9 +1210,9 @@
       ['curl', 'node', 'flutter', 'python'].forEach(l => {
         const btn = document.getElementById(`tab-lang-${l}`);
         if (l === lang) {
-          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition';
+          btn.className = 'px-2.5 py-1 text-xs font-semibold rounded bg-accent text-white transition';
         } else {
-          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+          btn.className = 'px-2.5 py-1 text-xs font-medium rounded text-slate-400 hover:text-white transition';
         }
       });
       renderSnippet();
@@ -1276,13 +1225,13 @@
 
       let code = '';
       if (state.snippetLang === 'curl') {
-        code = `# 1. Fetch decrypted secrets using your App ID and Secret\ncurl -X GET "${host}/api/client/secrets" \\\n  -H "X-App-Id: ${appId}" \\\n  -H "X-App-Secret: <YOUR_APP_SECRET_PLAINTEXT>"\n\n# Response example:\n# {\n#   "status": "success",\n#   "message": "Secrets retrieved",\n#   "data": [\n#     { "keyName": "DATABASE_URL", "value": "postgresql://..." },\n#     { "keyName": "PORT", "value": "3000" }\n#   ]\n# }`;
+        code = `# Fetch decrypted secrets at runtime\ncurl -X GET "${host}/api/client/secrets" \\\n  -H "X-App-Id: ${appId}" \\\n  -H "X-App-Secret: <YOUR_APP_SECRET>"`;
       } else if (state.snippetLang === 'node') {
-        code = `// Load environment secrets from EnvVault at runtime\nasync function loadRemoteEnv() {\n  const response = await fetch('${host}/api/client/secrets', {\n    method: 'GET',\n    headers: {\n      'X-App-Id': process.env.APP_ID || '${appId}',\n      'X-App-Secret': process.env.APP_SECRET || '<YOUR_APP_SECRET>'\n    }\n  });\n\n  const json = await response.json();\n  if (!response.ok) {\n    throw new Error('Failed to load secrets: ' + json.message);\n  }\n\n  // Inject all decrypted variables into process.env\n  for (const item of json.data) {\n    process.env[item.keyName] = item.value;\n  }\n  console.log('✅ Injected', json.data.length, 'environment variables.');\n}\n\nawait loadRemoteEnv();`;
+        code = `// Fetch secrets at application boot\nasync function loadSecrets() {\n  const res = await fetch('${host}/api/client/secrets', {\n    headers: {\n      'X-App-Id': process.env.APP_ID || '${appId}',\n      'X-App-Secret': process.env.APP_SECRET || '<YOUR_APP_SECRET>'\n    }\n  });\n  const json = await res.json();\n  if (!res.ok) throw new Error(json.message);\n  for (const item of json.data) {\n    process.env[item.keyName] = item.value;\n  }\n}\n\nawait loadSecrets();`;
       } else if (state.snippetLang === 'flutter') {
-        code = `import 'dart:convert';\nimport 'package:http/http.dart' as http;\n\nclass EnvVaultClient {\n  static const String baseUrl = '${host}';\n  static const String appId = '${appId}';\n  static const String appSecret = '<YOUR_APP_SECRET>';\n\n  static Future<Map<String, String>> fetchEnv() async {\n    final response = await http.get(\n      Uri.parse('\$baseUrl/api/client/secrets'),\n      headers: {\n        'X-App-Id': appId,\n        'X-App-Secret': appSecret,\n      },\n    );\n\n    if (response.statusCode == 200) {\n      final data = jsonDecode(response.body);\n      final List items = data['data'];\n      final Map<String, String> env = {};\n      for (var item in items) {\n        env[item['keyName']] = item['value'];\n      }\n      return env;\n    } else {\n      throw Exception('Failed to load secrets: \${response.body}');\n    }\n  }\n}`;
+        code = `import 'dart:convert';\nimport 'package:http/http.dart' as http;\n\nFuture<Map<String, String>> fetchEnv() async {\n  final res = await http.get(\n    Uri.parse('${host}/api/client/secrets'),\n    headers: {\n      'X-App-Id': '${appId}',\n      'X-App-Secret': '<YOUR_APP_SECRET>',\n    },\n  );\n  if (res.statusCode == 200) {\n    final data = jsonDecode(res.body);\n    final items = data['data'] as List;\n    return { for (var i in items) i['keyName'] as String : i['value'] as String };\n  }\n  throw Exception(res.body);\n}`;
       } else if (state.snippetLang === 'python') {
-        code = `import os\nimport requests\n\ndef load_remote_env():\n    url = "${host}/api/client/secrets"\n    headers = {\n        "X-App-Id": os.getenv("APP_ID", "${appId}"),\n        "X-App-Secret": os.getenv("APP_SECRET", "<YOUR_APP_SECRET>"),\n    }\n    response = requests.get(url, headers=headers)\n    response.raise_for_status()\n    \n    data = response.json().get("data", [])\n    for item in data:\n        os.environ[item["keyName"]] = item["value"]\n    print(f"✅ Successfully loaded {len(data)} secrets into os.environ")\n\nload_remote_env()`;
+        code = `import os\nimport requests\n\ndef load_env():\n    headers = {\n        "X-App-Id": os.getenv("APP_ID", "${appId}"),\n        "X-App-Secret": os.getenv("APP_SECRET", "<YOUR_APP_SECRET>"),\n    }\n    r = requests.get("${host}/api/client/secrets", headers=headers)\n    r.raise_for_status()\n    for item in r.json().get("data", []):\n        os.environ[item["keyName"]] = item["value"]\n\nload_env()`;
       }
 
       container.innerText = code;
