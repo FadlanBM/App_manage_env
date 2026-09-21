@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -12,8 +14,11 @@ import config from './config/index.js';
 import logger from './logger.js';
 
 const app = express();
-app.set('trust proxy', 1); // Allow correct IP reading behind Cloudflare Tunnel
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.join(__dirname, '../public');
 
+app.set('trust proxy', 1); // Allow correct IP reading behind Cloudflare Tunnel
 
 // Security & parsing
 app.use(
@@ -21,16 +26,17 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "validator.swagger.io"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
       },
     },
   })
 );
 app.use(
   cors({
-    origin: config.baseUrl,
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
   })
 );
@@ -57,6 +63,12 @@ if (config.nodeEnv !== 'test') {
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+// Static Web Dashboard
+app.use(express.static(publicDir));
+app.get(['/', '/dashboard'], (_req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
 
 // API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

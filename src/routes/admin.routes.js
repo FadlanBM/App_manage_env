@@ -98,6 +98,42 @@ router.post('/apps', adminAuth, validate(createAppRules), AppManagerController.c
 
 /**
  * @swagger
+ * /api/admin/apps:
+ *   get:
+ *     summary: List all registered applications
+ *     tags: [Admin Apps]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of registered apps
+ *       401: { description: Unauthorized }
+ */
+router.get('/apps', adminAuth, AppManagerController.listApps);
+
+/**
+ * @swagger
+ * /api/admin/apps/{id}:
+ *   delete:
+ *     summary: Delete an application and all its secrets
+ *     tags: [Admin Apps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Application ID
+ *     responses:
+ *       200: { description: App deleted successfully }
+ *       401: { description: Unauthorized }
+ *       404: { description: App not found }
+ */
+router.delete('/apps/:id', adminAuth, AppManagerController.deleteApp);
+
+/**
+ * @swagger
  * /api/admin/secrets:
  *   post:
  *     summary: Create new secret(s) for an app (supports single and bulk)
@@ -222,5 +258,26 @@ router.get('/secrets', adminAuth, SecretController.list);
  *       422: { description: Validation error }
  */
 router.put('/secrets/:id', adminAuth, validate(updateSecretRules), SecretController.update);
+
+/**
+ * @swagger
+ * /api/admin/secrets/{id}:
+ *   delete:
+ *     summary: Delete a secret variable by ID
+ *     tags: [Admin Secrets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Secret ID
+ *     responses:
+ *       200: { description: Secret deleted successfully }
+ *       401: { description: Unauthorized }
+ *       404: { description: Secret not found }
+ */
+router.delete('/secrets/:id', adminAuth, SecretController.delete);
 
 export default router;

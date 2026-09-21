@@ -511,3 +511,70 @@ PUT /api/admin/secrets/:id
 | 404 | Secret not found |
 | 422 | Validation error |
 
+### 2. List Registered Applications
+
+Mengambil daftar seluruh aplikasi yang terdaftar beserta jumlah secret/environment variables.
+
+```
+GET /api/admin/apps
+```
+
+**Headers:**
+- `Authorization: Bearer <admin_access_token>`
+
+**Response Sukses (200):**
+```json
+{
+  "status": "success",
+  "message": "Apps retrieved",
+  "data": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "appName": "mobile_app_prod",
+      "isActive": true,
+      "createdAt": "2026-09-11T01:14:41.000Z",
+      "_count": {
+        "secretItems": 8
+      }
+    }
+  ]
+}
+```
+
+### 3. Delete Application
+
+Menghapus aplikasi beserta seluruh secret dan token terkait secara cascade.
+
+```
+DELETE /api/admin/apps/:id
+```
+
+### 4. Delete Secret Variable
+
+Menghapus variabel environment terenkripsi berdasarkan ID secret.
+
+```
+DELETE /api/admin/secrets/:id
+```
+
+---
+
+## Web UI Dashboard
+
+Dashboard antarmuka visual tersedia langsung melalui browser di:
+- `http://localhost:3000/` atau `http://localhost:3000/dashboard`
+
+**Fitur Web UI:**
+- **Autentikasi Admin**: Sign In dan Pendaftaran akun Admin langsung.
+- **Manajemen App**: Pendaftaran App baru, perolehan App Secret plaintext (ditampilkan sekali dengan peringatan copy), list aplikasi, dan hapus aplikasi.
+- **Secrets Management**:
+  - Pilihan App aktif.
+  - Tambah variabel satu per satu.
+  - **Bulk Import / Paste .env**: Paste teks file `.env` utuh (mengabaikan komentar `#` dan baris kosong), otomatis diparse dan dienkripsi AES-256-GCM ke database.
+  - **Toggle Mask/Reveal Secret**: Melihat nilai asli variabel yang terenkripsi.
+  - **Copy as .env**: Menyalin semua variabel dalam format `.env` standar ke clipboard dengan 1 klik.
+  - **Download .env**: Mengunduh file `.env.<appName>`.
+  - Edit key / ganti value & Delete variable.
+- **Client SDK Snippets**: Contoh kode integrasi siap pakai (cURL, Node.js fetch, Flutter/Dart, Python) dengan ID app otomatis terisi.
+
+

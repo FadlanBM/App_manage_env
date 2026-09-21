@@ -7,6 +7,47 @@ import { sendSuccess } from '../utils/response.js';
 const prisma = new PrismaClient();
 
 export const AppManagerController = {
+  async listApps(req, res, next) {
+    try {
+      const apps = await prisma.app.findMany({
+        select: {
+          id: true,
+          appName: true,
+          isActive: true,
+          createdAt: true,
+          _count: {
+            select: { secretItems: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return sendSuccess(res, apps, 'Apps retrieved');
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deleteApp(req, res, next) {
+    try {
+      const { id } = req.params;
+      const app = await prisma.app.findUnique({ where: { id } });
+      if (!app) {
+        throw createError(404, 'App not found');
+      }
+
+      await prisma.$transaction([
+        prisma.secretItem.deleteMany({ where: { appId: id } }),
+        prisma.appSecret.deleteMany({ where: { appId: id } }),
+        prisma.userToken.deleteMany({ where: { appId: id } }),
+        prisma.app.delete({ where: { id } }),
+      ]);
+
+      return sendSuccess(res, { id }, 'App and related secrets deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async createApp(req, res, next) {
     try {
       const { appName } = req.body;

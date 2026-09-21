@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnvVault | Centralized Environment & Secret Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f17;
+      color: #f1f5f9;
+    }
+    code, pre, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-card {
+      background: rgba(18, 24, 38, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+          <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-lg tracking-tight text-white">EnvVault</span>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">AES-256-GCM</span>
+          </div>
+          <p class="text-xs text-slate-400">Centralized Environment & Secrets Manager</p>
+        </div>
+      </div>
+
+      <!-- Right Nav / User Controls -->
+      <div class="flex items-center gap-3">
+        <a href="/api-docs" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition">
+          <i data-lucide="book-open" class="w-4 h-4 text-slate-400"></i>
+          Swagger Docs
+        </a>
+        <a href="/health" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition border border-emerald-900/40">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          API Online
+        </a>
+
+        <!-- Auth info if logged in -->
+        <div id="nav-user-section" class="hidden flex items-center gap-3 pl-3 border-l border-slate-800">
+          <div class="text-right hidden md:block">
+            <div id="nav-user-name" class="text-xs font-semibold text-white">Admin</div>
+            <div id="nav-user-email" class="text-[11px] text-slate-400">admin@domain.com</div>
+          </div>
+          <button onclick="handleLogout()" title="Logout" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition border border-slate-800 hover:border-rose-900/40">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- AUTH SCREEN (Shown if NOT logged in) -->
+    <div id="auth-screen" class="hidden max-w-md mx-auto my-12">
+      <div class="glass-card rounded-2xl p-8 shadow-2xl border border-slate-800">
+        <div class="text-center mb-6">
+          <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="lock" class="w-6 h-6"></i>
+          </div>
+          <h2 id="auth-title" class="text-2xl font-bold text-white tracking-tight">Admin Sign In</h2>
+          <p class="text-sm text-slate-400 mt-1">Manage encrypted application environment variables</p>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="flex p-1 bg-slate-900/80 rounded-xl mb-6 border border-slate-800">
+          <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-600 text-white shadow transition">
+            Sign In
+          </button>
+          <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">
+            Create Admin
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              <input type="email" id="login-email" required placeholder="admin@example.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
+            <div class="relative">
+              <i data-lucide="key" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+            </div>
+          </div>
+          <button type="submit" id="btn-login-submit" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
+            <span>Sign In to Dashboard</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" onsubmit="handleRegister(event)" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Full Name</label>
+            <div class="relative">
+              <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              <input type="text" id="reg-name" required placeholder="Admin Name" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              <input type="email" id="reg-email" required placeholder="admin@example.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Password (min. 8 characters)</label>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              <input type="password" id="reg-password" minlength="8" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+            </div>
+          </div>
+          <button type="submit" id="btn-register-submit" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+            <span>Register Admin Account</span>
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MAIN DASHBOARD (Shown when logged in) -->
+    <div id="dashboard-screen" class="hidden space-y-8">
+
+      <!-- Metrics Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Registered Apps</div>
+            <div id="stat-total-apps" class="text-2xl font-bold text-white mt-0.5">0</div>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="key-round" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Secrets</div>
+            <div id="stat-total-secrets" class="text-2xl font-bold text-white mt-0.5">0</div>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+            <i data-lucide="binary" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Encryption</div>
+            <div class="text-lg font-bold text-cyan-300 mt-0.5">AES-256-GCM</div>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl border border-slate-800/80 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Client Auth</div>
+            <div class="text-lg font-bold text-amber-300 mt-0.5">Dual App Secret</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
+          <button id="nav-tab-apps" onclick="switchDashboardTab('apps')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow transition">
+            <i data-lucide="boxes" class="w-4 h-4"></i>
+            Applications
+          </button>
+          <button id="nav-tab-secrets" onclick="switchDashboardTab('secrets')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+            <i data-lucide="key" class="w-4 h-4"></i>
+            Environment Variables (.env)
+          </button>
+          <button id="nav-tab-integration" onclick="switchDashboardTab('integration')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+            <i data-lucide="terminal" class="w-4 h-4"></i>
+            Client Integration SDK
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="refreshData()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-700/60 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 1: APPLICATIONS -->
+      <div id="tab-content-apps" class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-bold text-white tracking-tight">Registered Applications</h3>
+            <p class="text-xs text-slate-400">Each application has its own encrypted secrets vault and authentication tokens.</p>
+          </div>
+          <button onclick="openModal('create-app-modal')" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-brand-600/20 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            Register New App
+          </button>
+        </div>
+
+        <!-- Apps Table / Cards -->
+        <div id="apps-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Empty State for Apps -->
+        <div id="apps-empty" class="hidden text-center py-16 glass-card rounded-2xl border border-slate-800">
+          <div class="w-16 h-16 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="folder-plus" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-base font-semibold text-white">No Applications Found</h4>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Create your first application to start storing encrypted environment variables.</p>
+          <button onclick="openModal('create-app-modal')" class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Create Application
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: SECRETS / ENVIRONMENT VARIABLES -->
+      <div id="tab-content-secrets" class="hidden space-y-6">
+        <!-- Top Toolbar: App Selector & Actions -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <label class="text-xs font-semibold text-slate-300 whitespace-nowrap">Active App:</label>
+            <select id="secrets-app-select" onchange="handleAppSelectChange(this.value)" class="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-medium text-white focus:outline-none focus:border-brand-500 min-w-[240px]">
+              <!-- Options populated dynamically -->
+            </select>
+            <div id="selected-app-badge" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono flex items-center gap-2">
+              <span class="text-slate-500">ID:</span>
+              <span id="selected-app-id-text" class="truncate max-w-[120px] sm:max-w-[200px]">None</span>
+              <button onclick="copyCurrentAppId()" title="Copy App ID" class="text-slate-400 hover:text-white">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="openModal('add-secret-modal')" class="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl transition shadow">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Add Variable
+            </button>
+            <button onclick="openModal('bulk-secrets-modal')" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-indigo-500/30 transition">
+              <i data-lucide="file-code" class="w-4 h-4"></i>
+              Bulk Import (.env)
+            </button>
+            <button onclick="exportAsEnv()" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
+              <i data-lucide="clipboard-copy" class="w-4 h-4"></i>
+              Copy as .env
+            </button>
+            <button onclick="downloadEnvFile()" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              Download .env
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Search Bar -->
+        <div class="flex items-center justify-between gap-4">
+          <div class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+            <input type="text" id="secrets-search-input" oninput="filterSecrets(this.value)" placeholder="Filter by variable key (e.g. DATABASE_URL, PORT)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
+          </div>
+          <div class="text-xs text-slate-400">
+            Showing <span id="filtered-secrets-count" class="font-bold text-white">0</span> variables
+          </div>
+        </div>
+
+        <!-- Secrets Table -->
+        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 bg-slate-950/40 text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                  <th class="py-3 px-5">Variable Key</th>
+                  <th class="py-3 px-5">Encrypted Value (AES-256-GCM)</th>
+                  <th class="py-3 px-5">Created At</th>
+                  <th class="py-3 px-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="secrets-table-body" class="divide-y divide-slate-800/60 text-xs">
+                <!-- Rows populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State for Secrets -->
+          <div id="secrets-empty" class="hidden text-center py-16">
+            <div class="w-14 h-14 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="key-round" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-sm font-semibold text-white">No Environment Variables</h4>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">This application doesn't have any encrypted variables yet.</p>
+            <div class="mt-4 flex items-center justify-center gap-3">
+              <button onclick="openModal('add-secret-modal')" class="px-3.5 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition">
+                Add Single Variable
+              </button>
+              <button onclick="openModal('bulk-secrets-modal')" class="px-3.5 py-1.5 bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl hover:bg-slate-700 transition">
+                Paste .env File
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: CLIENT INTEGRATION -->
+      <div id="tab-content-integration" class="hidden space-y-6">
+        <div>
+          <h3 class="text-lg font-bold text-white tracking-tight">Client Integration Guide</h3>
+          <p class="text-xs text-slate-400">How your client apps (Flutter, Node.js, Python, Golang) fetch and inject decrypted secrets dynamically at runtime.</p>
+        </div>
+
+        <!-- Workflow Banner -->
+        <div class="glass-card p-6 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center justify-center font-bold text-sm shrink-0">1</div>
+            <div>
+              <h5 class="text-xs font-bold text-white">Send Credentials</h5>
+              <p class="text-xs text-slate-400 mt-1">Client calls <code class="text-brand-300">GET /api/client/secrets</code> passing <code class="text-indigo-300">X-App-Id</code> and <code class="text-indigo-300">X-App-Secret</code> in headers.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold text-sm shrink-0">2</div>
+            <div>
+              <h5 class="text-xs font-bold text-white">Server Verification & Decryption</h5>
+              <p class="text-xs text-slate-400 mt-1">Server verifies bcrypt hash of secret, fetches AES-256-GCM ciphertexts, and decrypts them in memory.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center font-bold text-sm shrink-0">3</div>
+            <div>
+              <h5 class="text-xs font-bold text-white">Inject to Process Environment</h5>
+              <p class="text-xs text-slate-400 mt-1">Client receives key-value pairs and injects them directly into <code class="text-cyan-300">process.env</code> before booting application services.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Snippet Tabs -->
+        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-800 bg-slate-950/60 px-4 py-2.5">
+            <div class="flex items-center gap-2">
+              <button onclick="switchSnippetLang('curl')" id="tab-lang-curl" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition">cURL</button>
+              <button onclick="switchSnippetLang('node')" id="tab-lang-node" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Node.js</button>
+              <button onclick="switchSnippetLang('flutter')" id="tab-lang-flutter" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Flutter / Dart</button>
+              <button onclick="switchSnippetLang('python')" id="tab-lang-python" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Python</button>
+            </div>
+            <button onclick="copySnippetCode()" class="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-lg transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              Copy Code
+            </button>
+          </div>
+          <div class="p-5 bg-slate-950/80">
+            <pre><code id="snippet-code-container" class="text-xs font-mono text-emerald-300 leading-relaxed overflow-x-auto custom-scrollbar block">Loading snippet...</code></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal: Create Application -->
+  <div id="create-app-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-400"></i>
+          Register Application
+        </h3>
+        <button onclick="closeModal('create-app-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreateApp(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Application Name</label>
+          <input type="text" id="new-app-name" required placeholder="e.g. mobile-app-production" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          <p class="text-[11px] text-slate-500 mt-1">Unique slug or name to identify this client application.</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('create-app-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
+          <button type="submit" id="btn-create-app" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition">Create App</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: New App Secret Revealed (Shown ONLY ONCE upon app creation) -->
+  <div id="new-app-secret-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full rounded-2xl p-6 border border-amber-500/30 shadow-2xl">
+      <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-4">
+        <i data-lucide="key" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-lg font-bold text-white">App Credentials Created</h3>
+      <p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 p-3 rounded-xl mt-2 leading-relaxed">
+        <strong>⚠️ IMPORTANT:</strong> The App Secret below is hashed with bcrypt in the database. It is shown <strong>only once</strong> and cannot be retrieved again. Please store it securely in your client app's environment!
+      </p>
+
+      <div class="space-y-3 mt-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Application Name</label>
+          <input type="text" id="created-app-name-disp" readonly class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white select-all">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Application ID (X-App-Id)</label>
+          <div class="flex gap-2">
+            <input type="text" id="created-app-id-disp" readonly class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-indigo-300 select-all">
+            <button onclick="copyElementText('created-app-id-disp')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl transition"><i data-lucide="copy" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Application Secret (X-App-Secret)</label>
+          <div class="flex gap-2">
+            <input type="text" id="created-app-secret-disp" readonly class="flex-1 bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 select-all font-bold">
+            <button onclick="copyElementText('created-app-secret-disp')" class="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded-xl transition"><i data-lucide="copy" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button onclick="closeModal('new-app-secret-modal'); switchDashboardTab('secrets')" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow transition">
+          I Have Saved The Secret & Continue
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Single Secret -->
+  <div id="add-secret-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-400"></i>
+          Add Environment Variable
+        </h3>
+        <button onclick="closeModal('add-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleAddSingleSecret(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Variable Key Name</label>
+          <input type="text" id="new-secret-key" required placeholder="e.g. DATABASE_URL or API_KEY" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-slate-500 uppercase focus:outline-none focus:border-brand-500">
+          <p class="text-[11px] text-slate-500 mt-1">Standard practice uses UPPERCASE_WITH_UNDERSCORES.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Secret Value</label>
+          <textarea id="new-secret-val" required rows="3" placeholder="Paste value here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"></textarea>
+          <p class="text-[11px] text-slate-500 mt-1">Will be encrypted using AES-256-GCM before saving.</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('add-secret-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
+          <button type="submit" id="btn-save-secret" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition">Save Encrypted</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Bulk Paste .env File -->
+  <div id="bulk-secrets-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="file-code" class="w-5 h-5 text-indigo-400"></i>
+          Bulk Import from .env File
+        </h3>
+        <button onclick="closeModal('bulk-secrets-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">
+        Paste the contents of your <code class="text-indigo-300">.env</code> file. Comments (<code class="text-slate-500">#</code>) and empty lines will be ignored automatically.
+      </p>
+
+      <form onsubmit="handleBulkImport(event)" class="space-y-4">
+        <div>
+          <textarea id="bulk-env-textarea" oninput="parseBulkPreview()" required rows="8" placeholder="PORT=3000&#10;DATABASE_URL=postgresql://user:pass@localhost:5432/db&#10;JWT_SECRET=super-secret-key-at-least-32-chars&#10;API_TOKEN=sk-live-12345678" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-brand-500 custom-scrollbar"></textarea>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span id="bulk-parser-count">Detected: <strong class="text-white">0</strong> variables</span>
+          <span class="text-[11px] text-slate-500">Max 50 items per batch</span>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('bulk-secrets-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
+          <button type="submit" id="btn-bulk-import" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow transition">Import All</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Secret -->
+  <div id="edit-secret-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-5 h-5 text-brand-400"></i>
+          Edit Variable
+        </h3>
+        <button onclick="closeModal('edit-secret-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleEditSecretSubmit(event)" class="space-y-4">
+        <input type="hidden" id="edit-secret-id">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Variable Key Name</label>
+          <input type="text" id="edit-secret-key" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white uppercase focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">New Value (leave blank to keep current)</label>
+          <textarea id="edit-secret-val" rows="3" placeholder="Enter new value..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('edit-secret-modal')" class="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 rounded-xl transition">Cancel</button>
+          <button type="submit" id="btn-edit-secret" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition">Update Variable</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // State Store
+    const state = {
+      token: localStorage.getItem('envvault_token') || null,
+      user: JSON.parse(localStorage.getItem('envvault_user') || 'null'),
+      apps: [],
+      selectedAppId: null,
+      secrets: [],
+      currentTab: 'apps',
+      snippetLang: 'curl',
+      revealedSecrets: new Set()
+    };
+
+    // Helper: Toast Notifications
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-medium shadow-2xl transition transform translate-y-2 opacity-0 duration-200 border ${
+        type === 'success' ? 'bg-slate-900 text-emerald-300 border-emerald-500/40' :
+        type === 'error' ? 'bg-slate-900 text-rose-300 border-rose-500/40' :
+        'bg-slate-900 text-slate-200 border-slate-700'
+      }`;
+      const icon = type === 'success' ? 'check-circle-2' : type === 'error' ? 'alert-triangle' : 'info';
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons({ root: toast });
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Modal Helpers
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // Clipboard Copy Helper
+    async function copyToClipboard(text, successMsg = 'Copied to clipboard!') {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(successMsg, 'success');
+      } catch (err) {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(successMsg, 'success');
+      }
+    }
+
+    function copyElementText(id) {
+      const el = document.getElementById(id);
+      copyToClipboard(el.value, 'Copied!');
+    }
+
+    function copyCurrentAppId() {
+      if (state.selectedAppId) {
+        copyToClipboard(state.selectedAppId, 'App ID copied!');
+      }
+    }
+
+    // API Fetch Wrapper with Auth
+    async function apiRequest(endpoint, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(state.token ? { 'Authorization': `Bearer ${state.token}` } : {}),
+        ...(options.headers || {})
+      };
+
+      try {
+        const res = await fetch(endpoint, { ...options, headers });
+        const data = await res.json().catch(() => null);
+
+        if (res.status === 401 && state.token) {
+          showToast('Session expired, please sign in again', 'error');
+          handleLogout();
+          throw new Error('Unauthorized');
+        }
+
+        if (!res.ok) {
+          const errMessage = data?.message || data?.errors?.[0]?.msg || `Request failed (${res.status})`;
+          throw new Error(errMessage);
+        }
+
+        return data;
+      } catch (err) {
+        console.error('API Error:', err);
+        throw err;
+      }
+    }
+
+    // Authentication Handlers
+    function switchAuthTab(tab) {
+      const loginForm = document.getElementById('login-form');
+      const regForm = document.getElementById('register-form');
+      const tabLoginBtn = document.getElementById('tab-login-btn');
+      const tabRegBtn = document.getElementById('tab-register-btn');
+      const authTitle = document.getElementById('auth-title');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        regForm.classList.add('hidden');
+        tabLoginBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-600 text-white shadow transition';
+        tabRegBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        authTitle.innerText = 'Admin Sign In';
+      } else {
+        loginForm.classList.add('hidden');
+        regForm.classList.remove('hidden');
+        tabRegBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow transition';
+        tabLoginBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        authTitle.innerText = 'Create Admin Account';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-login-submit');
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Signing In...</span>`;
+
+        const res = await apiRequest('/api/admin/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+
+        state.token = res.data.access_token;
+        state.user = res.data.user;
+        localStorage.setItem('envvault_token', state.token);
+        localStorage.setItem('envvault_user', JSON.stringify(state.user));
+
+        showToast('Signed in successfully', 'success');
+        initDashboard();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Sign In to Dashboard</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+        lucide.createIcons({ root: btn });
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      const btn = document.getElementById('btn-register-submit');
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Registering...</span>`;
+
+        const res = await apiRequest('/api/admin/register', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password })
+        });
+
+        state.token = res.data.access_token;
+        state.user = res.data.user;
+        localStorage.setItem('envvault_token', state.token);
+        localStorage.setItem('envvault_user', JSON.stringify(state.user));
+
+        showToast('Admin account created successfully', 'success');
+        initDashboard();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Register Admin Account</span><i data-lucide="user-plus" class="w-4 h-4"></i>`;
+        lucide.createIcons({ root: btn });
+      }
+    }
+
+    function handleLogout() {
+      state.token = null;
+      state.user = null;
+      state.apps = [];
+      state.secrets = [];
+      state.selectedAppId = null;
+      localStorage.removeItem('envvault_token');
+      localStorage.removeItem('envvault_user');
+      checkAuth();
+    }
+
+    // Dashboard Navigation
+    function switchDashboardTab(tab) {
+      state.currentTab = tab;
+      const tabs = ['apps', 'secrets', 'integration'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`nav-tab-${t}`);
+        const content = document.getElementById(`tab-content-${t}`);
+        if (t === tab) {
+          btn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow transition';
+          content.classList.remove('hidden');
+        } else {
+          btn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+          content.classList.add('hidden');
+        }
+      });
+
+      if (tab === 'integration') {
+        renderSnippet();
+      }
+      lucide.createIcons();
+    }
+
+    // Data Loaders
+    async function loadApps() {
+      try {
+        const res = await apiRequest('/api/admin/apps');
+        state.apps = res.data || [];
+        renderApps();
+        updateMetrics();
+        populateAppSelect();
+      } catch (err) {
+        showToast('Failed to load applications: ' + err.message, 'error');
+      }
+    }
+
+    async function loadSecretsForApp(appId) {
+      if (!appId) {
+        state.secrets = [];
+        renderSecrets();
+        return;
+      }
+
+      try {
+        const res = await apiRequest(`/api/admin/secrets?appId=${appId}`);
+        state.secrets = res.data || [];
+        renderSecrets();
+      } catch (err) {
+        showToast('Failed to load secrets: ' + err.message, 'error');
+      }
+    }
+
+    async function refreshData() {
+      await loadApps();
+      if (state.selectedAppId) {
+        await loadSecretsForApp(state.selectedAppId);
+      }
+      showToast('Data refreshed', 'info');
+    }
+
+    function updateMetrics() {
+      document.getElementById('stat-total-apps').innerText = state.apps.length;
+      let totalSecrets = 0;
+      state.apps.forEach(a => {
+        totalSecrets += a._count?.secretItems || 0;
+      });
+      document.getElementById('stat-total-secrets').innerText = totalSecrets;
+    }
+
+    // Render Apps View
+    function renderApps() {
+      const container = document.getElementById('apps-container');
+      const emptyState = document.getElementById('apps-empty');
+
+      if (!state.apps || state.apps.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      container.innerHTML = state.apps.map(app => {
+        const secretCount = app._count?.secretItems || 0;
+        const formattedDate = new Date(app.createdAt).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        });
+
+        return `
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                    <i data-lucide="box" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-white tracking-tight">${escapeHtml(app.appName)}</h4>
+                    <span class="text-[10px] text-slate-400">Created ${formattedDate}</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${app.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400'}">
+                  ${app.isActive ? 'ACTIVE' : 'INACTIVE'}
+                </span>
+              </div>
+
+              <!-- App ID Bar -->
+              <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between gap-2">
+                <div class="truncate text-[11px] font-mono text-slate-400">
+                  <span class="text-slate-600">ID:</span> ${app.id}
+                </div>
+                <button onclick="copyToClipboard('${app.id}', 'App ID copied!')" title="Copy App ID" class="text-slate-400 hover:text-white shrink-0 p-1">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i>
+                <span><strong class="text-white">${secretCount}</strong> encrypted variables</span>
+              </div>
+            </div>
+
+            <div class="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              <button onclick="openSecretsForApp('${app.id}')" class="flex-1 py-2 px-3 text-xs font-semibold rounded-xl bg-brand-600/20 text-brand-300 hover:bg-brand-600 hover:text-white border border-brand-500/30 transition flex items-center justify-center gap-1.5">
+                <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+                Manage Secrets
+              </button>
+              <button onclick="handleDeleteApp('${app.id}', '${escapeHtml(app.appName)}')" title="Delete App" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl border border-slate-800 hover:border-rose-900/40 transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons({ root: container });
+    }
+
+    // App Creation & Deletion
+    async function handleCreateApp(e) {
+      e.preventDefault();
+      const appNameInput = document.getElementById('new-app-name');
+      const btn = document.getElementById('btn-create-app');
+      const appName = appNameInput.value.trim();
+
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Creating...';
+
+        const res = await apiRequest('/api/admin/apps', {
+          method: 'POST',
+          body: JSON.stringify({ appName })
+        });
+
+        closeModal('create-app-modal');
+        appNameInput.value = '';
+
+        // Display Generated Secret Modal (Shown Only Once)
+        document.getElementById('created-app-name-disp').value = res.data.appName;
+        document.getElementById('created-app-id-disp').value = res.data.id;
+        document.getElementById('created-app-secret-disp').value = res.data.secret_plaintext;
+        openModal('new-app-secret-modal');
+
+        await loadApps();
+        state.selectedAppId = res.data.id;
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Create App';
+      }
+    }
+
+    async function handleDeleteApp(id, name) {
+      if (!confirm(`Are you sure you want to delete application "${name}"?\n\nThis will permanently delete all its encrypted variables and authentication secrets.`)) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/api/admin/apps/${id}`, { method: 'DELETE' });
+        showToast(`Application "${name}" deleted successfully`, 'success');
+        if (state.selectedAppId === id) {
+          state.selectedAppId = null;
+        }
+        await loadApps();
+      } catch (err) {
+        showToast('Failed to delete app: ' + err.message, 'error');
+      }
+    }
+
+    function openSecretsForApp(appId) {
+      state.selectedAppId = appId;
+      const select = document.getElementById('secrets-app-select');
+      if (select) select.value = appId;
+      handleAppSelectChange(appId);
+      switchDashboardTab('secrets');
+    }
+
+    // Populate Secrets Tab
+    function populateAppSelect() {
+      const select = document.getElementById('secrets-app-select');
+      if (!state.apps || state.apps.length === 0) {
+        select.innerHTML = '<option value="">No applications found</option>';
+        document.getElementById('selected-app-id-text').innerText = 'None';
+        return;
+      }
+
+      select.innerHTML = state.apps.map(a => `
+        <option value="${a.id}" ${state.selectedAppId === a.id ? 'selected' : ''}>
+          ${escapeHtml(a.appName)} (${a._count?.secretItems || 0} vars)
+        </option>
+      `).join('');
+
+      if (!state.selectedAppId && state.apps.length > 0) {
+        state.selectedAppId = state.apps[0].id;
+        select.value = state.selectedAppId;
+      }
+
+      updateSelectedAppBadge();
+      loadSecretsForApp(state.selectedAppId);
+    }
+
+    function handleAppSelectChange(val) {
+      state.selectedAppId = val;
+      updateSelectedAppBadge();
+      loadSecretsForApp(val);
+      renderSnippet();
+    }
+
+    function updateSelectedAppBadge() {
+      const el = document.getElementById('selected-app-id-text');
+      if (state.selectedAppId) {
+        el.innerText = state.selectedAppId;
+      } else {
+        el.innerText = 'None';
+      }
+    }
+
+    // Render Secrets Table
+    function renderSecrets(filtered = null) {
+      const list = filtered || state.secrets;
+      const tbody = document.getElementById('secrets-table-body');
+      const emptyState = document.getElementById('secrets-empty');
+      document.getElementById('filtered-secrets-count').innerText = list.length;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      tbody.innerHTML = list.map(item => {
+        const isRevealed = state.revealedSecrets.has(item.id);
+        const displayVal = isRevealed ? escapeHtml(item.value) : '••••••••••••••••••••';
+        const formattedDate = new Date(item.createdAt).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        });
+
+        return `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-5 font-mono font-bold text-white tracking-wide">
+              <span class="text-indigo-400">$</span> ${escapeHtml(item.keyName)}
+            </td>
+            <td class="py-3 px-5 font-mono text-slate-300">
+              <div class="flex items-center gap-2">
+                <span id="secret-val-text-${item.id}" class="max-w-[200px] sm:max-w-[320px] truncate ${isRevealed ? 'text-emerald-400 font-semibold select-all' : 'text-slate-500'}">
+                  ${displayVal}
+                </span>
+                <button onclick="toggleSecretReveal('${item.id}')" title="${isRevealed ? 'Hide' : 'Reveal'}" class="p-1 text-slate-400 hover:text-white rounded transition">
+                  <i data-lucide="${isRevealed ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="copyToClipboard('${escapeJs(item.value)}', 'Secret value copied!')" title="Copy Value" class="p-1 text-slate-400 hover:text-white rounded transition">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+            <td class="py-3 px-5 text-slate-400 text-[11px] whitespace-nowrap">
+              ${formattedDate}
+            </td>
+            <td class="py-3 px-5 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-1">
+                <button onclick="openEditSecretModal('${item.id}', '${escapeJs(item.keyName)}')" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition" title="Edit">
+                  <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+                <button onclick="handleDeleteSecret('${item.id}', '${escapeJs(item.keyName)}')" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition" title="Delete">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons({ root: tbody });
+    }
+
+    function toggleSecretReveal(id) {
+      if (state.revealedSecrets.has(id)) {
+        state.revealedSecrets.delete(id);
+      } else {
+        state.revealedSecrets.add(id);
+      }
+      renderSecrets();
+    }
+
+    function filterSecrets(query) {
+      const q = query.trim().toUpperCase();
+      if (!q) {
+        renderSecrets();
+        return;
+      }
+      const filtered = state.secrets.filter(s => s.keyName.toUpperCase().includes(q));
+      renderSecrets(filtered);
+    }
+
+    // Add Single Secret
+    async function handleAddSingleSecret(e) {
+      e.preventDefault();
+      if (!state.selectedAppId) {
+        showToast('Please select or create an application first', 'error');
+        return;
+      }
+
+      const keyInput = document.getElementById('new-secret-key');
+      const valInput = document.getElementById('new-secret-val');
+      const btn = document.getElementById('btn-save-secret');
+
+      const keyName = keyInput.value.trim().toUpperCase();
+      const value = valInput.value;
+
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Encrypting & Saving...';
+
+        await apiRequest('/api/admin/secrets', {
+          method: 'POST',
+          body: JSON.stringify({
+            appId: state.selectedAppId,
+            keyName,
+            value
+          })
+        });
+
+        showToast(`Variable ${keyName} saved securely!`, 'success');
+        closeModal('add-secret-modal');
+        keyInput.value = '';
+        valInput.value = '';
+
+        await loadSecretsForApp(state.selectedAppId);
+        await loadApps(); // update counts
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Save Encrypted';
+      }
+    }
+
+    // Bulk Import from .env
+    function parseBulkPreview() {
+      const text = document.getElementById('bulk-env-textarea').value;
+      const parsed = parseEnvText(text);
+      document.getElementById('bulk-parser-count').innerHTML = `Detected: <strong class="text-white">${parsed.length}</strong> variables`;
+    }
+
+    function parseEnvText(raw) {
+      const lines = raw.split('\n');
+      const result = [];
+
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) continue; // Skip comments and blank lines
+
+        const eqIdx = line.indexOf('=');
+        if (eqIdx === -1) continue;
+
+        let key = line.slice(0, eqIdx).trim();
+        let val = line.slice(eqIdx + 1).trim();
+
+        // Strip enclosing quotes if present
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+
+        if (key) {
+          result.push({ keyName: key, value: val });
+        }
+      }
+      return result;
+    }
+
+    async function handleBulkImport(e) {
+      e.preventDefault();
+      if (!state.selectedAppId) {
+        showToast('Please select or create an application first', 'error');
+        return;
+      }
+
+      const text = document.getElementById('bulk-env-textarea').value;
+      const parsed = parseEnvText(text);
+
+      if (parsed.length === 0) {
+        showToast('No valid KEY=VALUE pairs found in text', 'error');
+        return;
+      }
+
+      if (parsed.length > 50) {
+        showToast('Batch limit is 50 variables. Found ' + parsed.length, 'error');
+        return;
+      }
+
+      const payload = parsed.map(item => ({
+        appId: state.selectedAppId,
+        keyName: item.keyName,
+        value: item.value
+      }));
+
+      const btn = document.getElementById('btn-bulk-import');
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Encrypting & Importing...';
+
+        await apiRequest('/api/admin/secrets', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        showToast(`Successfully imported ${parsed.length} variables!`, 'success');
+        closeModal('bulk-secrets-modal');
+        document.getElementById('bulk-env-textarea').value = '';
+
+        await loadSecretsForApp(state.selectedAppId);
+        await loadApps();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Import All';
+      }
+    }
+
+    // Edit Secret
+    function openEditSecretModal(id, keyName) {
+      document.getElementById('edit-secret-id').value = id;
+      document.getElementById('edit-secret-key').value = keyName;
+      document.getElementById('edit-secret-val').value = '';
+      openModal('edit-secret-modal');
+    }
+
+    async function handleEditSecretSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-secret-id').value;
+      const keyName = document.getElementById('edit-secret-key').value.trim();
+      const value = document.getElementById('edit-secret-val').value;
+      const btn = document.getElementById('btn-edit-secret');
+
+      const body = { keyName };
+      if (value) {
+        body.value = value;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Updating...';
+
+        await apiRequest(`/api/admin/secrets/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(body)
+        });
+
+        showToast('Variable updated successfully', 'success');
+        closeModal('edit-secret-modal');
+        await loadSecretsForApp(state.selectedAppId);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Update Variable';
+      }
+    }
+
+    // Delete Secret
+    async function handleDeleteSecret(id, keyName) {
+      if (!confirm(`Are you sure you want to delete variable "${keyName}"?`)) return;
+
+      try {
+        await apiRequest(`/api/admin/secrets/${id}`, { method: 'DELETE' });
+        showToast(`Variable "${keyName}" deleted`, 'success');
+        await loadSecretsForApp(state.selectedAppId);
+        await loadApps();
+      } catch (err) {
+        showToast('Failed to delete secret: ' + err.message, 'error');
+      }
+    }
+
+    // Export .env
+    function exportAsEnv() {
+      if (!state.secrets || state.secrets.length === 0) {
+        showToast('No secrets available to export', 'error');
+        return;
+      }
+
+      const lines = state.secrets.map(s => {
+        const val = s.value.includes('\n') || s.value.includes(' ') ? `"${s.value}"` : s.value;
+        return `${s.keyName}=${val}`;
+      });
+
+      const envText = `# Generated by EnvVault for App ID: ${state.selectedAppId}\n# Exported on ${new Date().toISOString()}\n\n` + lines.join('\n') + '\n';
+      copyToClipboard(envText, 'All variables copied in .env format!');
+    }
+
+    function downloadEnvFile() {
+      if (!state.secrets || state.secrets.length === 0) {
+        showToast('No secrets available to download', 'error');
+        return;
+      }
+
+      const activeApp = state.apps.find(a => a.id === state.selectedAppId);
+      const appSlug = activeApp ? activeApp.appName.toLowerCase().replace(/[^a-z0-9_-]/g, '_') : 'app';
+
+      const lines = state.secrets.map(s => {
+        const val = s.value.includes('\n') || s.value.includes(' ') ? `"${s.value}"` : s.value;
+        return `${s.keyName}=${val}`;
+      });
+
+      const envText = `# Generated by EnvVault for ${activeApp?.appName || 'App'}\n# App ID: ${state.selectedAppId}\n# Exported: ${new Date().toISOString()}\n\n` + lines.join('\n') + '\n';
+
+      const blob = new Blob([envText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `.env.${appSlug}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded .env.${appSlug}`, 'success');
+    }
+
+    // Integration Code Generator
+    function switchSnippetLang(lang) {
+      state.snippetLang = lang;
+      ['curl', 'node', 'flutter', 'python'].forEach(l => {
+        const btn = document.getElementById(`tab-lang-${l}`);
+        if (l === lang) {
+          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition';
+        } else {
+          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        }
+      });
+      renderSnippet();
+    }
+
+    function renderSnippet() {
+      const container = document.getElementById('snippet-code-container');
+      const appId = state.selectedAppId || '<YOUR_APP_ID>';
+      const host = window.location.origin;
+
+      let code = '';
+      if (state.snippetLang === 'curl') {
+        code = `# 1. Fetch decrypted secrets using your App ID and Secret\ncurl -X GET "${host}/api/client/secrets" \\\n  -H "X-App-Id: ${appId}" \\\n  -H "X-App-Secret: <YOUR_APP_SECRET_PLAINTEXT>"\n\n# Response example:\n# {\n#   "status": "success",\n#   "message": "Secrets retrieved",\n#   "data": [\n#     { "keyName": "DATABASE_URL", "value": "postgresql://..." },\n#     { "keyName": "PORT", "value": "3000" }\n#   ]\n# }`;
+      } else if (state.snippetLang === 'node') {
+        code = `// Load environment secrets from EnvVault at runtime\nasync function loadRemoteEnv() {\n  const response = await fetch('${host}/api/client/secrets', {\n    method: 'GET',\n    headers: {\n      'X-App-Id': process.env.APP_ID || '${appId}',\n      'X-App-Secret': process.env.APP_SECRET || '<YOUR_APP_SECRET>'\n    }\n  });\n\n  const json = await response.json();\n  if (!response.ok) {\n    throw new Error('Failed to load secrets: ' + json.message);\n  }\n\n  // Inject all decrypted variables into process.env\n  for (const item of json.data) {\n    process.env[item.keyName] = item.value;\n  }\n  console.log('✅ Injected', json.data.length, 'environment variables.');\n}\n\nawait loadRemoteEnv();`;
+      } else if (state.snippetLang === 'flutter') {
+        code = `import 'dart:convert';\nimport 'package:http/http.dart' as http;\n\nclass EnvVaultClient {\n  static const String baseUrl = '${host}';\n  static const String appId = '${appId}';\n  static const String appSecret = '<YOUR_APP_SECRET>';\n\n  static Future<Map<String, String>> fetchEnv() async {\n    final response = await http.get(\n      Uri.parse('\$baseUrl/api/client/secrets'),\n      headers: {\n        'X-App-Id': appId,\n        'X-App-Secret': appSecret,\n      },\n    );\n\n    if (response.statusCode == 200) {\n      final data = jsonDecode(response.body);\n      final List items = data['data'];\n      final Map<String, String> env = {};\n      for (var item in items) {\n        env[item['keyName']] = item['value'];\n      }\n      return env;\n    } else {\n      throw Exception('Failed to load secrets: \${response.body}');\n    }\n  }\n}`;
+      } else if (state.snippetLang === 'python') {
+        code = `import os\nimport requests\n\ndef load_remote_env():\n    url = "${host}/api/client/secrets"\n    headers = {\n        "X-App-Id": os.getenv("APP_ID", "${appId}"),\n        "X-App-Secret": os.getenv("APP_SECRET", "<YOUR_APP_SECRET>"),\n    }\n    response = requests.get(url, headers=headers)\n    response.raise_for_status()\n    \n    data = response.json().get("data", [])\n    for item in data:\n        os.environ[item["keyName"]] = item["value"]\n    print(f"✅ Successfully loaded {len(data)} secrets into os.environ")\n\nload_remote_env()`;
+      }
+
+      container.innerText = code;
+    }
+
+    function copySnippetCode() {
+      const container = document.getElementById('snippet-code-container');
+      copyToClipboard(container.innerText, 'Code snippet copied!');
+    }
+
+    // Utilities
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeJs(text) {
+      if (!text) return '';
+      return String(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // Initialization
+    function checkAuth() {
+      const authScreen = document.getElementById('auth-screen');
+      const dashboardScreen = document.getElementById('dashboard-screen');
+      const navUserSection = document.getElementById('nav-user-section');
+
+      if (state.token && state.user) {
+        authScreen.classList.add('hidden');
+        dashboardScreen.classList.remove('hidden');
+        navUserSection.classList.remove('hidden');
+        document.getElementById('nav-user-name').innerText = state.user.name || 'Admin';
+        document.getElementById('nav-user-email').innerText = state.user.email || '';
+        loadApps();
+      } else {
+        authScreen.classList.remove('hidden');
+        dashboardScreen.classList.add('hidden');
+        navUserSection.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function initDashboard() {
+      checkAuth();
+    }
+
+    // Boot App
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

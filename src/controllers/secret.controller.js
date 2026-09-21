@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { encryptSecret } from '../utils/encryption.js';
+import { encryptSecret, decryptSecret } from '../utils/encryption.js';
 import { sendSuccess } from '../utils/response.js';
 
 const prisma = new PrismaClient();
@@ -38,15 +38,67 @@ export const SecretController = {
   async list(req, res, next) {
     try {
       const { appId } = req.query;
+      const where = appId ? { appId } : {};
       const secrets = await prisma.secretItem.findMany({
-        where: { appId },
+        where,
         select: {
           id: true,
+          appId: true,
           keyName: true,
+          encryptedData: true,
+          iv: true,
+          authTag: true,
           createdAt: true,
         },
+        orderBy: { keyName: 'asc' },
       });
-      return sendSuccess(res, secrets, 'Secrets list retrieved');
+
+      const result = secrets.map((s) => {
+        let value = '';
+        try {
+          value = decryptSecret({
+            encryptedData: s.encryptedData,
+            iv: s.iv,
+            authTag: s.authTag,
+          });
+        } catch {
+          value = '[Decryption failed]';
+        }
+        return {
+          id: s.id,
+          appId: s.appId,
+          keyName: s.keyName,
+          value,
+          createdAt: s.createdAt,
+        };
+      });
+
+      return sendSuccess(res, result, 'Secrets list retrieved');
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async delete(req, res, next) {
+    try {
+      const { id } = req.params;
+      const secret = await prisma.secretItem.findUnique({
+        where: { id },
+      });
+
+      if (!secret) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Secret not found',
+          data: null,
+        });
+      }
+
+      await prisma.secretItem.delete({
+        where: { id },
+      });
+
+      return sendSuccess(res, { id }, 'Secret deleted successfully');
     } catch (err) {
       next(err);
     }
