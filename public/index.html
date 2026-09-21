@@ -123,18 +123,21 @@
 
         <!-- Login Form -->
         <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+          <!-- Inline Error Banner -->
+          <div id="login-error-alert" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2"></div>
+
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
             <div class="relative">
               <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="email" id="login-email" required placeholder="admin@example.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+              <input type="email" id="login-email" oninput="clearLoginError()" required placeholder="admin@example.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
             </div>
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
             <div class="relative">
               <i data-lucide="key" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
-              <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+              <input type="password" id="login-password" oninput="clearLoginError()" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
             </div>
           </div>
           <button type="submit" id="btn-login-submit" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
@@ -559,26 +562,35 @@
       revealedSecrets: new Set()
     };
 
+    // Helper: Safe Lucide Icons
+    function safeCreateIcons(opts) {
+      try {
+        if (window.lucide && typeof lucide.createIcons === 'function') {
+          lucide.createIcons(opts);
+        }
+      } catch (err) {
+        console.warn('Lucide icons warning:', err);
+      }
+    }
+
     // Helper: Toast Notifications
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
+      if (!container) return;
       const toast = document.createElement('div');
-      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-medium shadow-2xl transition transform translate-y-2 opacity-0 duration-200 border ${
-        type === 'success' ? 'bg-slate-900 text-emerald-300 border-emerald-500/40' :
-        type === 'error' ? 'bg-slate-900 text-rose-300 border-rose-500/40' :
+      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl transition duration-300 border ${
+        type === 'success' ? 'bg-slate-900 text-emerald-300 border-emerald-500/50' :
+        type === 'error' ? 'bg-slate-900 text-rose-300 border-rose-500/50' :
         'bg-slate-900 text-slate-200 border-slate-700'
       }`;
       const icon = type === 'success' ? 'check-circle-2' : type === 'error' ? 'alert-triangle' : 'info';
       toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
       container.appendChild(toast);
-      lucide.createIcons({ root: toast });
-
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      });
+      safeCreateIcons();
 
       setTimeout(() => {
-        toast.classList.add('translate-y-2', 'opacity-0');
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
         setTimeout(() => toast.remove(), 300);
       }, 3500);
     }
@@ -586,7 +598,7 @@
     // Modal Helpers
     function openModal(id) {
       document.getElementById(id).classList.remove('hidden');
-      lucide.createIcons();
+      safeCreateIcons();
     }
     function closeModal(id) {
       document.getElementById(id).classList.add('hidden');
@@ -598,7 +610,6 @@
         await navigator.clipboard.writeText(text);
         showToast(successMsg, 'success');
       } catch (err) {
-        // Fallback for older browsers
         const ta = document.createElement('textarea');
         ta.value = text;
         document.body.appendChild(ta);
@@ -651,11 +662,18 @@
     }
 
     // Authentication Handlers
+    function clearLoginError() {
+      const alert = document.getElementById('login-error-alert');
+      if (alert) alert.classList.add('hidden');
+    }
+
     async function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('login-email').value;
+      clearLoginError();
+      const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
       const btn = document.getElementById('btn-login-submit');
+      const errorAlert = document.getElementById('login-error-alert');
 
       try {
         btn.disabled = true;
@@ -674,11 +692,17 @@
         showToast('Signed in successfully', 'success');
         initDashboard();
       } catch (err) {
-        showToast(err.message, 'error');
+        const msg = err.message || 'Login failed';
+        if (errorAlert) {
+          errorAlert.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i><span>${escapeHtml(msg)}</span>`;
+          errorAlert.classList.remove('hidden');
+          safeCreateIcons();
+        }
+        showToast(msg, 'error');
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>Sign In to Dashboard</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
-        lucide.createIcons({ root: btn });
+        safeCreateIcons();
       }
     }
 
@@ -712,7 +736,7 @@
       if (tab === 'integration') {
         renderSnippet();
       }
-      lucide.createIcons();
+      safeCreateIcons();
     }
 
     // Data Loaders
@@ -826,7 +850,7 @@
         `;
       }).join('');
 
-      lucide.createIcons({ root: container });
+      safeCreateIcons();
     }
 
     // App Creation & Deletion
@@ -985,7 +1009,7 @@
         `;
       }).join('');
 
-      lucide.createIcons({ root: tbody });
+      safeCreateIcons();
     }
 
     function toggleSecretReveal(id) {
@@ -1303,7 +1327,7 @@
         dashboardScreen.classList.add('hidden');
         navUserSection.classList.add('hidden');
       }
-      lucide.createIcons();
+      safeCreateIcons();
     }
 
     function initDashboard() {
@@ -1313,7 +1337,7 @@
     // Boot App
     document.addEventListener('DOMContentLoaded', () => {
       checkAuth();
-      lucide.createIcons();
+      safeCreateIcons();
     });
   </script>
 </body>
