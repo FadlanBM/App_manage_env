@@ -1,32 +1,51 @@
-import { PrismaClient } from '@prisma/client';
+import crypto from 'node:crypto';
+import { db } from '../config/firebase.js';
 
-const db = new PrismaClient();
+// ponytail: direct Firestore collections; add pagination cursor helpers when user collection grows > 10k
+const COLLECTION = 'users';
 
 export const UserRepository = {
-  findByEmail(email) {
-    return db.user.findUnique({ where: { email } });
+  async findByEmail(email) {
+    const snap = await db.collection(COLLECTION).where('email', '==', email).limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { id: doc.id, ...doc.data() };
   },
 
-  findById(id) {
-    return db.user.findUnique({ where: { id } });
+  async findById(id) {
+    const doc = await db.collection(COLLECTION).doc(id).get();
+    if (!doc.exists) return null;
+    return { id: doc.id, ...doc.data() };
   },
 
-  create({ name, email, passwordHash }) {
-    return db.user.create({
-      data: { name, email, passwordHash },
-      select: { id: true, name: true, email: true, createdAt: true },
-    });
+  async create({ name, email, passwordHash }) {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const data = {
+      name: name || null,
+      email,
+      passwordHash,
+      role: 'user',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.collection(COLLECTION).doc(id).set(data);
+    return { id, name: data.name, email: data.email, createdAt: data.createdAt };
   },
 
-  updateRole(id, role) {
-    return db.user.update({
-      where: { id },
-      data: { role },
-      select: { id: true, name: true, email: true, role: true },
-    });
+  async updateRole(id, role) {
+    const now = new Date().toISOString();
+    const ref = db.collection(COLLECTION).doc(id);
+    await ref.update({ role, updatedAt: now });
+    const snap = await ref.get();
+    const data = snap.data();
+    return { id: snap.id, name: data.name, email: data.email, role: data.role };
   },
 
   async clear() {
-    await db.user.deleteMany();
+    const snap = await db.collection(COLLECTION).get();
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
   },
 };

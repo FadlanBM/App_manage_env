@@ -10,7 +10,7 @@ const options = {
       description: 'Multi-app authentication REST API with dual-token JWT (access + refresh)',
     },
     servers: [
-      { url: `${config.baseUrl}/api`, description: 'API server' },
+      { url: config.baseUrl, description: 'API server' },
     ],
     components: {
       securitySchemes: {

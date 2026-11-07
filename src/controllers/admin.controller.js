@@ -14,8 +14,7 @@ export const AdminController = {
 
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
-      const result = await AdminService.login(email, password);
+      const result = await AdminService.loginWithFirebase(req.body.idToken);
       return sendSuccess(res, result, 'Admin login successful');
     } catch (err) {
       next(err);

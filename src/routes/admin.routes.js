@@ -43,7 +43,7 @@ router.post('/register', validate(adminRegisterRules), AdminController.register)
  * @swagger
  * /api/admin/login:
  *   post:
- *     summary: Admin login
+ *     summary: Admin login with Firebase OAuth ID token
  *     tags: [Admin Auth]
  *     requestBody:
  *       required: true
@@ -51,13 +51,12 @@ router.post('/register', validate(adminRegisterRules), AdminController.register)
  *         application/json:
  *           schema:
  *             type: object
- *             required: [email, password]
+ *             required: [idToken]
  *             properties:
- *               email: { type: string, format: email, example: admin@example.com }
- *               password: { type: string, format: password, example: "adminpass123" }
+ *               idToken: { type: string, description: Firebase Authentication ID token }
  *     responses:
  *       200: { description: Login successful, returns JWT token }
- *       401: { description: Invalid credentials }
+ *       403: { description: Firebase identity is not an admin }
  *       422: { description: Validation error }
  */
 router.post('/login', validate(adminLoginRules), AdminController.login);
@@ -131,6 +130,13 @@ router.get('/apps', adminAuth, AppManagerController.listApps);
  *       404: { description: App not found }
  */
 router.delete('/apps/:id', adminAuth, AppManagerController.deleteApp);
+
+router.get('/invitations', adminAuth, AppManagerController.listInvitations);
+router.post('/invitations/:id/accept', adminAuth, AppManagerController.acceptInvitation);
+router.post('/invitations/:id/reject', adminAuth, AppManagerController.rejectInvitation);
+router.post('/apps/:id/invitations', adminAuth, AppManagerController.inviteCollaborator);
+router.post('/apps/:id/invitations/:email/approve', adminAuth, AppManagerController.approveInvitation);
+router.delete('/apps/:id/invitations/:email', adminAuth, AppManagerController.removeCollaborator);
 
 /**
  * @swagger

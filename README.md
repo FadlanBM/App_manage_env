@@ -88,6 +88,8 @@ docker-compose up --build
 | `GET` | `/api-docs` | Swagger UI |
 | `POST` | `/api/auth/register` | Register new user |
 | `POST` | `/api/auth/login` | Login & get JWT token |
+| `POST` | `/api/admin/apps/:id/invitations` | Invite collaborator by email |
+| `DELETE` | `/api/admin/apps/:id/invitations/:email` | Revoke collaborator access |
 
 ### Register
 
@@ -118,32 +120,31 @@ curl -X POST http://localhost:3000/api/auth/login \
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window (15 min) |
 | `RATE_LIMIT_MAX` | `100` | Max requests per window |
 
-## Switching Database
+## Deployment ke Vercel & Firebase
 
-### PostgreSQL
+### 1. Firebase Setup
+1. Buat project di [Firebase Console](https://console.firebase.google.com/).
+2. Buka **Project Settings** > **Service Accounts** > **Generate new private key**.
+3. Simpan service account key JSON atau gunakan field:
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_CLIENT_EMAIL`
+   - `FIREBASE_PRIVATE_KEY`
+   - atau `FIREBASE_SERVICE_ACCOUNT` (string JSON atau base64)
+4. Untuk seed data aplikasi awal:
+   ```bash
+   npm run seed:firebase
+   ```
 
-1. Update `.env`:
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/auth_api
-```
-
-2. Update `prisma/schema.prisma`:
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-```
-
-3. Run migration:
-```bash
-npx prisma migrate dev
-```
-
-### MySQL
-
-Same steps as PostgreSQL, use `provider = "mysql"`.
-
+### 2. Deploy ke Vercel
+1. Import repository ke Vercel Dashboard.
+2. Konfigurasikan Environment Variables di Vercel:
+   - `JWT_SECRET`
+   - `ENCRYPTION_KEY`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_CLIENT_EMAIL`
+   - `FIREBASE_PRIVATE_KEY`
+   - `FIREBASE_SERVICE_ACCOUNT` (alternatif: isi seluruh service account JSON)
+3. Deploy! Vercel otomatis menjalankan serverless handler melalui `api/index.js` dan konfigurasi `vercel.json`.
 ## Testing
 
 ```bash

@@ -7,7 +7,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit --detectOpenHandles"
+    "test": "node scripts/smoke-test.js",
+    "test:jest": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit --detectOpenHandles",
+    "seed:firebase": "node scripts/seed-firebase.js",
+    "clear:firebase": "node scripts/clear-firebase.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +23,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
     "express-validator": "^7.3.2",
+    "firebase-admin": "^14.5.0",
     "helmet": "^8.3.0",
     "http-errors": "^2.0.1",
     "jsonwebtoken": "^9.0.3",

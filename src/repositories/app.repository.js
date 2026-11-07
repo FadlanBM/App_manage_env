@@ -1,25 +1,34 @@
-import { PrismaClient } from '@prisma/client';
+import { db } from '../config/firebase.js';
 
-const db = new PrismaClient();
-
+// ponytail: direct Firestore collections; add pagination when app inventory grows
 export const AppRepository = {
-  findByAppName(appName) {
-    return db.app.findUnique({ where: { appName } });
+  async findByAppName(appName) {
+    const snap = await db.collection('apps').where('appName', '==', appName).limit(1).get();
+    if (snap.empty) return null;
+    return { id: snap.docs[0].id, ...snap.docs[0].data() };
   },
 
-  findById(id) {
-    return db.app.findUnique({ where: { id } });
+  async findById(id) {
+    const doc = await db.collection('apps').doc(id).get();
+    if (!doc.exists) return null;
+    return { id: doc.id, ...doc.data() };
   },
 
-  /** Get all active (non-revoked) secrets for an app */
-  findActiveSecrets(appId) {
-    return db.appSecret.findMany({
-      where: { appId, revokedAt: null },
-    });
+  async findActiveSecrets(appId) {
+    const snap = await db
+      .collection('app_secrets')
+      .where('appId', '==', appId)
+      .where('revokedAt', '==', null)
+      .get();
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   },
 
   async clear() {
-    await db.appSecret.deleteMany();
-    await db.app.deleteMany();
+    for (const collection of ['app_secrets', 'apps']) {
+      const snap = await db.collection(collection).get();
+      const batch = db.batch();
+      snap.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+    }
   },
 };

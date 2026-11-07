@@ -7,8 +7,7 @@ export const adminRegisterRules = [
 ];
 
 export const adminLoginRules = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password').notEmpty().withMessage('Password is required'),
+  body('idToken').isString().notEmpty().withMessage('Firebase ID token is required'),
 ];
 
 export const createAppRules = [

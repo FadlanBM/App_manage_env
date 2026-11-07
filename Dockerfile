@@ -8,7 +8,6 @@ RUN npm ci --omit=dev
 COPY . .
 
 RUN npx prisma@6 generate
-RUN npx prisma@6 db push --skip-generate
 
 EXPOSE 3000
 

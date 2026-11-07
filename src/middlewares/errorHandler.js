@@ -6,7 +6,11 @@ export function errorHandler(err, req, res, _next) {
   const message = err.message || 'Internal Server Error';
 
   if (process.env.NODE_ENV !== 'test') {
-    logger.error({ err, statusCode }, 'Unhandled error');
+    if (statusCode >= 500) {
+      logger.error({ err, statusCode }, 'Unhandled error');
+    } else {
+      logger.warn({ path: req.path, statusCode, message }, 'Client error');
+    }
   }
 
   return sendError(res, message, statusCode);

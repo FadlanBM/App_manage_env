@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EnvVault — Centralized Secrets &amp; Environment Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -139,24 +141,13 @@
           <p class="text-xs text-slate-400 mt-1">Authenticate to access application secrets and environment variables.</p>
         </div>
 
-        <!-- Login Form -->
-        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
-          <!-- Inline Error Banner -->
-          <div id="login-error-alert" class="hidden p-3 rounded bg-rose-950/40 border border-rose-800 text-rose-200 text-xs flex items-center gap-2"></div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Email</label>
-            <input type="email" id="login-email" oninput="clearLoginError()" required placeholder="admin@example.com" class="w-full bg-subpanel border border-borderline rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
-            <input type="password" id="login-password" oninput="clearLoginError()" required placeholder="••••••••" class="w-full bg-subpanel border border-borderline rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition">
-          </div>
-          <button type="submit" id="btn-login-submit" class="w-full py-2 px-4 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded shadow-sm transition flex items-center justify-center gap-2">
-            <span>Sign In</span>
+        <div class="space-y-4">
+          <div id="login-error-alert" class="hidden p-3 rounded bg-rose-950/40 border border-rose-800 text-rose-200 text-xs"></div>
+          <button type="button" id="btn-login-submit" onclick="handleLogin()" class="w-full py-2 px-4 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded shadow-sm transition flex items-center justify-center gap-2">
+            <span>Continue with Google</span>
             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
           </button>
-        </form>
+        </div>
       </div>
     </div>
 
@@ -181,6 +172,15 @@
             New Application
           </button>
         </div>
+      </div>
+
+      <!-- Pending Invitations Banner -->
+      <div id="pending-invitations-banner" class="hidden panel rounded-lg p-3 border-amber-600/40 bg-amber-950/20 space-y-2">
+        <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+          <i data-lucide="mail" class="w-4 h-4"></i>
+          <span>Undangan Kolaborasi Masuk (Perlu Persetujuan):</span>
+        </div>
+        <div id="pending-invitations-list" class="space-y-2"></div>
       </div>
 
       <!-- Main Navigation Tabs -->
@@ -234,6 +234,7 @@
             </button>
           </div>
         </div>
+
       </div>
 
       <!-- TAB 2: SECRETS / ENVIRONMENT VARIABLES -->
@@ -256,6 +257,7 @@
 
           <!-- Action Buttons -->
           <div class="flex flex-wrap items-center gap-1.5">
+            <button id="selected-app-members-button" onclick="openAppMembers(state.selectedAppId)" class="hidden px-2.5 py-1.5 bg-subpanel hover:bg-slate-700/50 text-slate-200 text-xs font-medium rounded border border-borderline">Members</button>
             <button onclick="openModal('add-secret-modal')" class="px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded flex items-center gap-1 transition">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i>
               Add Variable
@@ -371,6 +373,23 @@
 
   <!-- ==================== MODALS ==================== -->
 
+  <div id="app-members-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="panel max-w-lg w-full rounded-lg p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-borderline">
+        <div>
+          <h2 id="app-members-title" class="text-sm font-semibold text-white">Kelola Anggota Project</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Akses bersifat per-aplikasi. Kolaborator yang diundang hanya dapat mengakses aplikasi ini.</p>
+        </div>
+        <button onclick="closeModal('app-members-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="flex gap-2 mb-3">
+        <input id="app-member-email" type="email" placeholder="member@example.com" class="flex-1 bg-subpanel border border-borderline rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent">
+        <button id="app-member-invite-button" onclick="inviteAppMember()" class="px-3 py-1.5 text-xs font-semibold bg-accent hover:bg-accent-hover text-white rounded">Invite</button>
+      </div>
+      <div id="app-members-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+    </div>
+  </div>
+
   <!-- Modal: Create Application -->
   <div id="create-app-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
     <div class="panel max-w-sm w-full rounded-lg p-5 shadow-2xl">
@@ -468,8 +487,17 @@
       </p>
 
       <form onsubmit="handleBulkImport(event)" class="space-y-3">
-        <div>
-          <textarea id="bulk-env-textarea" oninput="parseBulkPreview()" required rows="7" placeholder="PORT=3000&#10;DATABASE_URL=postgresql://user:***@localhost:5432/db&#10;JWT_SECRET=super-secret-key" class="w-full bg-canvas border border-borderline rounded p-2.5 text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-accent custom-scrollbar"></textarea>
+        <label class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-300 bg-subpanel hover:bg-slate-700/50 rounded border border-borderline cursor-pointer">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+          Choose .env file
+          <input type="file" accept=".env,text/plain" onchange="handleEnvFileUpload(event)" class="hidden">
+        </label>
+        <div id="env-drop-zone" class="border-2 border-dashed border-borderline rounded-lg p-3 text-center transition-all bg-canvas/50">
+          <div class="flex items-center justify-center gap-2 mb-2">
+            <i data-lucide="file-up" class="w-4 h-4 text-accent"></i>
+            <span class="text-xs font-medium text-slate-300">Drag &amp; Drop file .env di sini</span>
+          </div>
+          <textarea id="bulk-env-textarea" oninput="parseBulkPreview()" required rows="7" placeholder="Atau paste langsung isi .env di sini...&#10;PORT=3000&#10;DATABASE_URL=postgresql://...&#10;JWT_SECRET=..." class="w-full bg-subpanel border border-borderline rounded p-2.5 text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-accent custom-scrollbar"></textarea>
         </div>
         <div class="flex items-center justify-between text-xs text-slate-400">
           <span id="bulk-parser-count">Detected: <strong class="text-white">0</strong> variables</span>
@@ -622,48 +650,67 @@
 
     // Authentication Handlers
     function clearLoginError() {
-      const alert = document.getElementById('login-error-alert');
-      if (alert) alert.classList.add('hidden');
+      document.getElementById('login-error-alert').classList.add('hidden');
     }
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      clearLoginError();
-      const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
+    async function getFirebaseApp() {
+      const configResponse = await fetch('/api/config/firebase');
+      if (!configResponse.ok) throw new Error('Firebase OAuth is not configured');
+      const firebaseConfig = await configResponse.json();
+      return firebase.apps.length ? firebase.app() : firebase.initializeApp({
+        apiKey: firebaseConfig.apiKey,
+        authDomain: firebaseConfig.authDomain,
+        projectId: firebaseConfig.projectId,
+      });
+    }
+
+    async function processLoginToken(idToken) {
+      const res = await apiRequest('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      });
+      state.token = res.data.access_token;
+      state.user = res.data.user;
+      localStorage.setItem('envvault_token', state.token);
+      localStorage.setItem('envvault_user', JSON.stringify(state.user));
+      showToast('Signed in successfully', 'success');
+      initDashboard();
+    }
+
+    async function handleLogin() {
       const btn = document.getElementById('btn-login-submit');
       const errorAlert = document.getElementById('login-error-alert');
-
+      errorAlert.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Signing In...</span>';
       try {
-        btn.disabled = true;
-        btn.innerHTML = `<span>Signing In...</span>`;
-
-        const res = await apiRequest('/api/admin/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password })
-        });
-
-        state.token = res.data.access_token;
-        state.user = res.data.user;
-        localStorage.setItem('envvault_token', state.token);
-        localStorage.setItem('envvault_user', JSON.stringify(state.user));
-
-        showToast('Signed in successfully', 'success');
-        initDashboard();
+        const firebaseApp = await getFirebaseApp();
+        const auth = firebase.auth(firebaseApp);
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try {
+          const credential = await auth.signInWithPopup(provider);
+          const idToken = await credential.user.getIdToken();
+          await processLoginToken(idToken);
+        } catch (popupErr) {
+          if (popupErr.code === 'auth/popup-closed-by-user' || popupErr.code === 'auth/popup-blocked') {
+            showToast('Popup blocked or closed. Redirecting...', 'info');
+            await auth.signInWithRedirect(provider);
+            return;
+          }
+          throw popupErr;
+        }
       } catch (err) {
         const msg = err.message || 'Login failed';
-        if (errorAlert) {
-          errorAlert.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i><span>${escapeHtml(msg)}</span>`;
-          errorAlert.classList.remove('hidden');
-          safeCreateIcons();
-        }
+        errorAlert.textContent = msg;
+        errorAlert.classList.remove('hidden');
         showToast(msg, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>Sign In</span><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>`;
+        btn.innerHTML = '<span>Continue with Google</span><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>';
         safeCreateIcons();
       }
     }
+
 
     function handleLogout() {
       state.token = null;
@@ -708,6 +755,39 @@
         populateAppSelect();
       } catch (err) {
         showToast('Failed to load applications: ' + err.message, 'error');
+      }
+      await loadPendingInvitations();
+    }
+
+    async function loadPendingInvitations() {
+      const banner = document.getElementById('pending-invitations-banner');
+      const list = document.getElementById('pending-invitations-list');
+      if (!banner || !list) return;
+      try {
+        const res = await apiRequest('/api/admin/invitations');
+        const invitations = res.data || [];
+        banner.classList.toggle('hidden', invitations.length === 0);
+        list.innerHTML = invitations.map(invite => `
+          <div class="flex items-center justify-between gap-3 rounded border border-amber-900/40 bg-canvas/40 p-2">
+            <div class="text-xs text-slate-200"><strong>${escapeHtml(invite.appName)}</strong><span class="text-slate-400"> — diundang oleh ${escapeHtml(invite.inviterEmail || 'Owner')}</span></div>
+            <div class="flex gap-1 shrink-0">
+              <button onclick="respondToInvitation('${invite.appId}', 'accept')" class="px-2 py-1 text-xs text-emerald-400 hover:bg-emerald-950/40 rounded border border-emerald-900/50">Terima</button>
+              <button onclick="respondToInvitation('${invite.appId}', 'reject')" class="px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 rounded border border-borderline">Tolak</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load pending invitations:', err.message);
+      }
+    }
+
+    async function respondToInvitation(appId, action) {
+      try {
+        await apiRequest(`/api/admin/invitations/${appId}/${action}`, { method: 'POST' });
+        showToast(action === 'accept' ? 'Undangan diterima. Akses aplikasi diberikan.' : 'Undangan ditolak.', 'success');
+        await loadApps();
+      } catch (err) {
+        showToast(err.message, 'error');
       }
     }
 
@@ -791,6 +871,7 @@
                 <button onclick="openSecretsForApp('${app.id}')" class="px-2.5 py-1 text-xs font-medium rounded bg-subpanel hover:bg-slate-700 text-slate-200 border border-borderline transition">
                   Manage Secrets
                 </button>
+                ${app.createdBy === state.user?.email?.toLowerCase() ? `<button onclick="openAppMembers('${app.id}')" title="Kelola Anggota" class="px-2.5 py-1 text-xs font-medium rounded bg-subpanel hover:bg-slate-700 text-slate-200 border border-borderline transition flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> Anggota (${(app.sharedWith || []).length}${app.pendingInvitations?.length ? ` + ${app.pendingInvitations.length} pending` : ''})</button>` : ''}
                 <button onclick="handleDeleteApp('${app.id}', '${escapeHtml(app.appName)}')" title="Delete App" class="p-1 text-slate-400 hover:text-rose-400 hover:bg-subpanel rounded transition">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
@@ -801,6 +882,98 @@
       }).join('');
 
       safeCreateIcons();
+    }
+
+
+    let membersAppId = null;
+
+    function openAppMembers(appId) {
+      const app = state.apps.find(item => item.id === appId);
+      if (!app || app.createdBy !== state.user?.email?.toLowerCase()) return;
+      membersAppId = appId;
+      document.getElementById('app-members-title').textContent = `${app.appName} — Members`;
+      document.getElementById('app-member-email').value = '';
+      renderAppMembers();
+      openModal('app-members-modal');
+    }
+
+    function renderAppMembers() {
+      const app = state.apps.find(item => item.id === membersAppId);
+      const list = document.getElementById('app-members-list');
+      if (!app || !list) return;
+      const members = app.sharedWith || [];
+      const pending = app.pendingInvitations || [];
+      let html = `
+        <div class="flex items-center justify-between gap-3 rounded border border-borderline bg-canvas/60 px-3 py-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-200 font-mono">${escapeHtml(app.createdBy || state.user?.email || '')}</span>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-900/60">Owner</span>
+          </div>
+          <span class="text-[11px] text-slate-500">Pembuat</span>
+        </div>
+      `;
+      if (members.length) html += members.map(email => `
+        <div class="flex items-center justify-between gap-3 rounded border border-borderline bg-subpanel px-3 py-2">
+          <div class="flex items-center gap-2"><span class="text-xs text-slate-200 font-mono break-all">${escapeHtml(email)}</span><span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-900/60">Approved</span></div>
+          <button onclick="removeAppMember('${app.id}', '${escapeHtml(email)}')" class="shrink-0 px-2 py-1 text-xs text-rose-400 hover:bg-rose-950/40 rounded border border-rose-900/50">Hapus Akses</button>
+        </div>
+      `).join('');
+      if (pending.length) html += pending.map(email => `
+        <div class="flex items-center justify-between gap-3 rounded border border-amber-900/50 bg-amber-950/20 px-3 py-2">
+          <div class="flex items-center gap-2"><span class="text-xs text-slate-200 font-mono break-all">${escapeHtml(email)}</span><span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-900/60">Menunggu Persetujuan</span></div>
+          <div class="flex gap-1">
+            <button onclick="approveAppMember('${app.id}', '${escapeHtml(email)}')" class="shrink-0 px-2 py-1 text-xs text-emerald-400 hover:bg-emerald-950/40 rounded border border-emerald-900/50">Setujui</button>
+            <button onclick="removeAppMember('${app.id}', '${escapeHtml(email)}')" class="shrink-0 px-2 py-1 text-xs text-rose-400 hover:bg-rose-950/40 rounded border border-rose-900/50">Hapus</button>
+          </div>
+        </div>
+      `).join('');
+      if (!members.length && !pending.length) html += '<p class="text-xs text-slate-500 py-3 text-center">Belum ada anggota yang diundang untuk aplikasi ini.</p>';
+      list.innerHTML = html;
+    }
+
+    async function approveAppMember(appId, email) {
+      try {
+        await apiRequest(`/api/admin/apps/${appId}/invitations/${encodeURIComponent(email)}/approve`, { method: 'POST' });
+        showToast(`Akses ${email} disetujui`, 'success');
+        await loadApps();
+        renderAppMembers();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function inviteAppMember() {
+      const input = document.getElementById('app-member-email');
+      const btn = document.getElementById('app-member-invite-button');
+      const email = input.value.trim();
+      if (!email || !membersAppId) return;
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Mengundang...';
+        const res = await apiRequest(`/api/admin/apps/${membersAppId}/invitations`, {
+          method: 'POST',
+          body: JSON.stringify({ email }),
+        });
+        showToast(res.data?.emailStatus === 'sent' ? `Undangan email terkirim ke ${email}` : `Akses diberikan ke ${email}`, 'success');
+        await loadApps();
+        renderAppMembers();
+        input.value = '';
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Invite';
+      }
+    }
+
+    async function removeAppMember(appId, email) {
+      if (!confirm(`Cabut akses ${email} dari project ini?`)) return;
+      try {
+        await apiRequest(`/api/admin/apps/${appId}/invitations/${encodeURIComponent(email)}`, { method: 'DELETE' });
+        showToast(`Akses ${email} dicabut`, 'success');
+        await loadApps();
+        renderAppMembers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
     }
 
     // App Creation & Deletion
@@ -837,6 +1010,24 @@
         btn.innerText = 'Create Application';
       }
     }
+    async function inviteCollaborator(appId) {
+      const email = prompt('Email address to invite:');
+      if (!email) return;
+      try {
+        const res = await apiRequest(`/api/admin/apps/${appId}/invitations`, {
+          method: 'POST',
+          body: JSON.stringify({ email }),
+        });
+        const msg = res.data?.emailStatus === 'sent'
+          ? `Undangan email terkirim ke ${email}`
+          : `Akses ditambahkan untuk ${email}`;
+        showToast(msg, 'success');
+        await loadApps();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
 
     async function handleDeleteApp(id, name) {
       if (!confirm(`Are you sure you want to delete application "${name}"?\n\nThis will permanently remove all associated encrypted secrets.`)) {
@@ -900,6 +1091,12 @@
         el.innerText = state.selectedAppId;
       } else {
         el.innerText = 'None';
+      }
+      const currentApp = state.apps.find(a => a.id === state.selectedAppId);
+      const btn = document.getElementById('selected-app-members-button');
+      if (btn) {
+        const isOwner = currentApp && currentApp.createdBy === state.user?.email?.toLowerCase();
+        btn.classList.toggle('hidden', !isOwner);
       }
     }
 
@@ -1055,6 +1252,33 @@
       }
       return result;
     }
+    function handleEnvFileUpload(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const textarea = document.getElementById('bulk-env-textarea');
+        textarea.value = event.target.result;
+        parseBulkPreview();
+      };
+      reader.readAsText(file);
+    }
+    function handleEnvFileDrop(e) {
+      e.preventDefault();
+      const dropZone = document.getElementById('env-drop-zone');
+      if (dropZone) dropZone.classList.remove('border-accent', 'bg-accent/10');
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const textarea = document.getElementById('bulk-env-textarea');
+        textarea.value = event.target.result;
+        parseBulkPreview();
+      };
+      reader.readAsText(file);
+    }
+
+
 
     async function handleBulkImport(e) {
       e.preventDefault();
@@ -1284,9 +1508,33 @@
     }
 
     // Boot App
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       checkAuth();
       safeCreateIcons();
+
+      try {
+        const firebaseApp = await getFirebaseApp();
+        const auth = firebase.auth(firebaseApp);
+        const result = await auth.getRedirectResult();
+        if (result && result.user) {
+          const idToken = await result.user.getIdToken();
+          await processLoginToken(idToken);
+        }
+      } catch (err) {
+        console.debug('No redirect auth or failed:', err);
+      }
+
+      const dropZone = document.getElementById('env-drop-zone');
+      dropZone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropZone.classList.add('border-accent', 'bg-accent/10');
+      });
+      dropZone.addEventListener('dragleave', (event) => {
+        if (!dropZone.contains(event.relatedTarget)) {
+          dropZone.classList.remove('border-accent', 'bg-accent/10');
+        }
+      });
+      dropZone.addEventListener('drop', handleEnvFileDrop);
     });
   </script>
 </body>

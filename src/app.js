@@ -23,15 +23,24 @@ app.set('trust proxy', 1); // Allow correct IP reading behind Cloudflare Tunnel
 // Security & parsing
 app.use(
   helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net'],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://cdn.tailwindcss.com',
+          'https://cdn.jsdelivr.net',
+          'https://www.gstatic.com',
+          'https://apis.google.com',
+        ],
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
-        connectSrc: ["'self'", '*'],
+        imgSrc: ["'self'", 'data:', 'validator.swagger.io', 'https://lh3.googleusercontent.com'],
+        connectSrc: ["'self'", '*', 'https://*.googleapis.com', 'https://*.firebaseio.com'],
+        frameSrc: ["'self'", 'https://*.firebaseapp.com'],
         upgradeInsecureRequests: null,
       },
     },
@@ -61,12 +70,19 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Logging (skip in test)
+app.get('/api/config/firebase', (_req, res) => {
+  if (!config.firebaseProjectId || !config.firebaseWebApiKey) {
+    return res.status(503).json({ status: 'error', message: 'Firebase OAuth is not configured' });
+  }
+  return res.json({ apiKey: config.firebaseWebApiKey, projectId: config.firebaseProjectId, authDomain: `${config.firebaseProjectId}.firebaseapp.com` });
+});
 if (config.nodeEnv !== 'test') {
   app.use(morgan('dev'));
 }
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
 // Static Web Dashboard
 app.use(express.static(publicDir));

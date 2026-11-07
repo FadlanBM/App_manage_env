@@ -1,8 +1,9 @@
 import createError from 'http-errors';
 import { UserRepository } from '../repositories/user.repository.js';
-import { hashPassword, comparePassword } from '../utils/hash.js';
+import { hashPassword } from '../utils/hash.js';
 import { generateAccessToken } from '../utils/jwt.js';
-
+import { firebaseAuth, db } from '../config/firebase.js';
+import config from '../config/index.js';
 const ADMIN_APP_NAME = 'admin_console';
 
 export const AdminService = {
@@ -25,21 +26,48 @@ export const AdminService = {
     };
   },
 
-  async login(email, password) {
-    const user = await UserRepository.findByEmail(email);
-    if (!user || user.role !== 'admin') {
-      throw createError(401, 'Invalid admin credentials');
+  async loginWithFirebase(idToken) {
+    let identity;
+    try {
+      identity = await firebaseAuth.verifyIdToken(idToken);
+    } catch {
+      throw createError(401, 'Invalid Firebase ID token');
+    }
+    if (!identity.email || !identity.email_verified) {
+      throw createError(401, 'Verified Firebase email required');
     }
 
-    const valid = await comparePassword(password, user.passwordHash);
-    if (!valid) {
-      throw createError(401, 'Invalid admin credentials');
+    const email = identity.email.toLowerCase();
+    const allowedEmails = config.adminEmails || [];
+
+    if (allowedEmails.length > 0 && !allowedEmails.includes(email)) {
+      const [approvedApps, pendingApps, legacyApps] = await Promise.all([
+        db.collection('apps').where('approvedMembers', 'array-contains', email).limit(1).get(),
+        db.collection('apps').where('pendingInvitations', 'array-contains', email).limit(1).get(),
+        db.collection('apps').where('sharedWith', 'array-contains', email).limit(1).get(),
+      ]);
+      if (approvedApps.empty && pendingApps.empty && legacyApps.empty) {
+        throw createError(403, `Access denied for email ${identity.email}`);
+      }
+    }
+
+    let user = await UserRepository.findByEmail(identity.email);
+    if (!user) {
+      // Auto-provision user dari akun Firebase yang berhasil login
+      user = await UserRepository.create({
+        name: identity.name || identity.email.split('@')[0],
+        email: identity.email,
+        passwordHash: 'firebase_oauth',
+      });
+      user = await UserRepository.updateRole(user.id, 'admin');
+    } else if (user.role !== 'admin') {
+      user = await UserRepository.updateRole(user.id, 'admin');
     }
 
     const accessToken = generateAccessToken(user.id, ADMIN_APP_NAME, user.email, 'admin');
     return {
       access_token: accessToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name || identity.name, email: user.email, role: 'admin' },
     };
   },
 };
