@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default(process.env.VERCEL ? 'production' : 'development'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL: z.string().default('30d'),
